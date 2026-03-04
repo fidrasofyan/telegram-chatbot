@@ -11,8 +11,13 @@ import { createFactory } from 'hono/factory';
 import { jsonObjectFrom } from 'kysely/helpers/postgres';
 import { convert as telegramifyMarkdown } from 'telegram-markdown-v2';
 import { config } from '@/config';
-import { DEFAULT_REPLY_MARKUP } from '@/constant';
+import {
+  DEFAULT_MAX_MESSAGE_IN_CONTEXT,
+  DEFAULT_REPLY_MARKUP,
+  DEFAULT_SYSTEM_PROMPT,
+} from '@/constant';
 import { db } from '@/database';
+import { updateThread } from '@/repository/telegram';
 import type {
   TelegramRequest,
   TelegramResponse,
@@ -26,15 +31,6 @@ import {
 } from '@/util';
 
 const factory = createFactory();
-
-const DEFAULT_MAX_MESSAGE_IN_CONTEXT = 10;
-
-const DEFAULT_SYSTEM_PROMPT = [
-  'You are a helpful assistant.',
-  'The rules:',
-  '- Use markdown for formatting.',
-  '- Do not use table (if you need to show table, use list instead).',
-].join('\n');
 
 const vercelAI = createGateway({
   apiKey: config.VERCEL_AI_API_KEY,
@@ -62,32 +58,14 @@ export const chatHandler = factory.createHandlers(
     if (req.text.toLowerCase() === '/chat') {
       const title = 'Chat';
 
-      // Update thread
-      await db
-        .updateTable('threads')
-        .set({
-          max_messages_in_context:
-            DEFAULT_MAX_MESSAGE_IN_CONTEXT,
-          system_prompt: DEFAULT_SYSTEM_PROMPT,
-          title,
-          updated_at: new Date(),
-        })
-        .where('id', '=', `${req.threadID}`)
-        .where('chat_id', '=', `${req.chatID}`)
-        .executeTakeFirstOrThrow();
-
-      // Reset messages
-      await db
-        .deleteFrom('messages')
-        .where('chat_id', '=', `${req.chatID}`)
-        .where('thread_id', '=', `${req.threadID}`)
-        .executeTakeFirstOrThrow();
-
-      // Update title
-      await editForumTopic({
-        chat_id: req.chatID,
-        message_thread_id: req.threadID,
-        name: title,
+      // Update thread mode
+      await updateThread({
+        chatID: req.chatID,
+        threadID: req.threadID,
+        title,
+        maxMessagesInContext:
+          DEFAULT_MAX_MESSAGE_IN_CONTEXT,
+        systemPrompt: DEFAULT_SYSTEM_PROMPT,
       });
 
       return c.json({
@@ -124,6 +102,7 @@ async function processChat(req: {
   const thread = await db
     .selectFrom('threads')
     .select((eb) => [
+      'threads.title',
       'threads.max_messages_in_context',
       'threads.system_prompt',
       jsonObjectFrom(
@@ -161,7 +140,7 @@ async function processChat(req: {
       .executeTakeFirst();
 
     if (defaultModel?.is_enabled) {
-      // Update thread
+      // Update thread model
       await db
         .updateTable('threads')
         .set({
@@ -172,11 +151,11 @@ async function processChat(req: {
         .where('chat_id', '=', `${req.chatID}`)
         .executeTakeFirstOrThrow();
 
-      // Update title
-      editForumTopic({
+      // Edit forum topic
+      await editForumTopic({
         chat_id: req.chatID,
         message_thread_id: req.threadID,
-        name: `Chat - ${normalizeModelName(defaultModel.model_name)}`,
+        name: `${thread.title || 'Chat'} - ${normalizeModelName(defaultModel.model_name)}`,
       });
 
       thread.model = {

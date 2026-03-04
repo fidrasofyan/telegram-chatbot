@@ -218,6 +218,7 @@ export const enableModelHandler = factory.createHandlers(
           } satisfies TelegramResponse);
         }
 
+        // Enable model
         const model = await db
           .updateTable('models')
           .set({

@@ -1,10 +1,9 @@
 import { createFactory } from 'hono/factory';
-import { db } from '@/database';
+import { updateThread } from '@/repository/telegram';
 import type {
   TelegramRequest,
   TelegramResponse,
 } from '@/types';
-import { editForumTopic } from '@/util';
 
 const factory = createFactory();
 
@@ -39,62 +38,16 @@ export const promptGeneratorHandler =
     ].join('\n');
 
     try {
-      // Upsert thread
-      const systemPromptCount = await db
-        .selectFrom('threads')
-        .select(({ fn }) => [fn.countAll().as('count')])
-        .where('id', '=', `${req.threadID}`)
-        .where('chat_id', '=', `${req.chatID}`)
-        .executeTakeFirstOrThrow();
-
-      if (!Number(systemPromptCount.count)) {
-        await db
-          .insertInto('threads')
-          .values({
-            id: req.threadID,
-            chat_id: req.chatID,
-            max_messages_in_context: 0,
-            system_prompt: systemPrompt,
-            created_at: new Date(),
-          })
-          .executeTakeFirstOrThrow();
-      } else {
-        await db
-          .updateTable('threads')
-          .set({
-            max_messages_in_context: 0,
-            system_prompt: systemPrompt,
-            updated_at: new Date(),
-          })
-          .where('id', '=', `${req.threadID}`)
-          .where('chat_id', '=', `${req.chatID}`)
-          .executeTakeFirstOrThrow();
-      }
-
-      // Reset messages
-      await db
-        .deleteFrom('messages')
-        .where('chat_id', '=', `${req.chatID}`)
-        .where('thread_id', '=', `${req.threadID}`)
-        .executeTakeFirstOrThrow();
-
-      // Update title
       const title = 'Prompt Generator';
-      await editForumTopic({
-        chat_id: req.chatID,
-        message_thread_id: req.threadID,
-        name: title,
-      });
 
-      await db
-        .updateTable('threads')
-        .set({
-          title,
-          updated_at: new Date(),
-        })
-        .where('id', '=', `${req.threadID}`)
-        .where('chat_id', '=', `${req.chatID}`)
-        .executeTakeFirstOrThrow();
+      // Update thread mode
+      await updateThread({
+        chatID: req.chatID,
+        threadID: req.threadID,
+        title,
+        maxMessagesInContext: 0,
+        systemPrompt,
+      });
 
       return c.json({
         method: 'sendMessage',

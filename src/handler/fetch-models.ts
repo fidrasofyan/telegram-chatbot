@@ -33,21 +33,10 @@ export const fetchModelsHandler = factory.createHandlers(
     }
 
     try {
-      const [vercelAIResult, openRouterResult] =
-        await Promise.all([
-          fetchVercelAIModels(),
-          fetchOpenRouterModels(),
-        ]);
-
-      if (!vercelAIResult || !openRouterResult) {
-        return c.json({
-          method: 'sendMessage',
-          message_thread_id: req.messageThreadId,
-          chat_id: req.chatId,
-          parse_mode: 'HTML',
-          text: '<i>Failed to fetch models</i>',
-        } satisfies TelegramResponse);
-      }
+      await Promise.all([
+        fetchVercelAIModels(),
+        fetchOpenRouterModels(),
+      ]);
 
       return c.json({
         method: 'sendMessage',
@@ -74,13 +63,13 @@ const vercelAI = createGateway({
   apiKey: config.VERCEL_AI_API_KEY,
 });
 
-async function fetchVercelAIModels(): Promise<boolean> {
+async function fetchVercelAIModels() {
   // Create provider
   const vercelAIProvider = await db
     .insertInto('providers')
     .values({
       id: 'vercel-ai',
-      name: 'Vercel AI',
+      name: 'Vercel',
     })
     .returning(['id'])
     .onConflict((oc) =>
@@ -113,8 +102,6 @@ async function fetchVercelAIModels(): Promise<boolean> {
       }),
     )
     .execute();
-
-  return true;
 }
 
 // OpenRouter
@@ -135,13 +122,13 @@ type OpenRouterModel = {
   expiration_date: number | null;
 };
 
-async function fetchOpenRouterModels(): Promise<boolean> {
+async function fetchOpenRouterModels() {
   // Create provider
   const openRouterProvider = await db
     .insertInto('providers')
     .values({
       id: 'openrouter',
-      name: 'OpenRouter',
+      name: 'OR',
     })
     .returning(['id'])
     .onConflict((oc) =>
@@ -161,7 +148,7 @@ async function fetchOpenRouterModels(): Promise<boolean> {
   );
 
   if (!result.ok) {
-    return false;
+    return;
   }
 
   const { data } = (await result.json()) as {
@@ -188,6 +175,4 @@ async function fetchOpenRouterModels(): Promise<boolean> {
       }),
     )
     .execute();
-
-  return true;
 }

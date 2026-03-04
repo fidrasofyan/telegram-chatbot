@@ -189,5 +189,7 @@ export function splitMarkdown(
 
 export function normalizeModelName(model: string): string {
   const index = model.indexOf(':');
-  return index === -1 ? model : model.slice(index + 1);
+  const normalized =
+    index === -1 ? model : model.slice(index + 1);
+  return normalized.trim();
 }

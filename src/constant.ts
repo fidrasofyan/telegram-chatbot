@@ -4,9 +4,10 @@ export const DEFAULT_MAX_MESSAGE_IN_CONTEXT = 10;
 
 export const DEFAULT_SYSTEM_PROMPT = [
   'You are a helpful assistant.',
-  'The rules:',
-  '- Use markdown for formatting.',
-  '- Do not use table (if you need to show table, use list instead).',
+  'Always answer in markdown.',
+  'Do not create tables under any circumstances.',
+  'If you need to present structured or tabular data, use a list, bullet points, or a clear description instead.',
+  'Keep responses helpful, concise, and well-organized.',
 ].join('\n');
 
 export const DEFAULT_REPLY_MARKUP = {

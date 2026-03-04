@@ -1,5 +1,6 @@
 import { db } from '@/database';
 import type { JsonValue } from '@/database/generated-types';
+import { editForumTopic, normalizeModelName } from '@/util';
 
 export async function setSession(data: {
   chatID: number;
@@ -65,4 +66,48 @@ export async function resetSession(data: {
       'threads.data',
     ])
     .executeTakeFirstOrThrow();
+}
+
+export async function updateThread(data: {
+  chatID: number;
+  threadID: number;
+  title: string;
+  maxMessagesInContext: number;
+  systemPrompt: string;
+}) {
+  // Update thread
+  await db
+    .updateTable('threads')
+    .set({
+      title: data.title,
+      max_messages_in_context: data.maxMessagesInContext,
+      system_prompt: data.systemPrompt,
+      updated_at: new Date(),
+    })
+    .where('id', '=', `${data.threadID}`)
+    .where('chat_id', '=', `${data.chatID}`)
+    .executeTakeFirstOrThrow();
+
+  // Reset messages
+  await db
+    .deleteFrom('messages')
+    .where('chat_id', '=', `${data.chatID}`)
+    .where('thread_id', '=', `${data.threadID}`)
+    .executeTakeFirstOrThrow();
+
+  // Get model name
+  const model = await db
+    .selectFrom('threads')
+    .innerJoin('models', 'threads.model_id', 'models.id')
+    .select('models.model_name as name')
+    .where('threads.id', '=', `${data.threadID}`)
+    .where('threads.chat_id', '=', `${data.chatID}`)
+    .executeTakeFirst();
+
+  // Edit forum topic
+  await editForumTopic({
+    chat_id: data.chatID,
+    message_thread_id: data.threadID,
+    name: `${data.title} ${model?.name ? `- ${normalizeModelName(model.name)}` : ''}`.trim(),
+  });
 }

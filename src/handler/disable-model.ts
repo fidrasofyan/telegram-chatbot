@@ -170,6 +170,7 @@ export const disableModelHandler = factory.createHandlers(
           } satisfies TelegramResponse);
         }
 
+        // Disable model
         const model = await db
           .updateTable('models')
           .set({

@@ -64,8 +64,7 @@ export const chooseModelHandler = factory.createHandlers(
     const thread = await db
       .selectFrom('threads')
       .select((eb) => [
-        'threads.max_messages_in_context',
-        'threads.system_prompt',
+        'threads.title',
         jsonObjectFrom(
           eb
             .selectFrom('models')
@@ -75,10 +74,7 @@ export const chooseModelHandler = factory.createHandlers(
               'models.provider_id',
             )
             .select([
-              'models.model_id',
               'models.model_name',
-              'models.is_enabled',
-              'models.provider_id',
               'providers.name as provider_name',
             ])
             .whereRef('models.id', '=', 'threads.model_id'),
@@ -173,7 +169,7 @@ export const chooseModelHandler = factory.createHandlers(
         } satisfies TelegramResponse);
       }
 
-      // Step 2: Set thread model
+      // Step 2: Update thread model
       case 2: {
         await resetSession({
           chatID: req.chatID,
@@ -201,7 +197,7 @@ export const chooseModelHandler = factory.createHandlers(
           } satisfies TelegramResponse);
         }
 
-        const result = await db
+        await db
           .updateTable('threads')
           .set({
             model_id: req.callbackQueryData,
@@ -224,14 +220,14 @@ export const chooseModelHandler = factory.createHandlers(
             'models.model_name',
             'providers.name as provider_name',
           ])
-          .where('models.id', '=', result.model_id)
+          .where('models.id', '=', req.callbackQueryData)
           .executeTakeFirstOrThrow();
 
         // Update title
         editForumTopic({
           chat_id: req.chatID,
           message_thread_id: req.threadID,
-          name: `Chat - ${normalizeModelName(selectedModel.model_name)}`,
+          name: `${thread.title || 'Chat'} - ${normalizeModelName(selectedModel.model_name)}`,
         });
 
         return c.json({
