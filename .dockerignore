@@ -1,0 +1,13 @@
+.devtools
+.vscode
+node_modules
+.dockerignore
+.env
+.env.*
+.git
+.gitignore
+biome.json
+Dockerfile
+*.yaml
+*.md
+*.http

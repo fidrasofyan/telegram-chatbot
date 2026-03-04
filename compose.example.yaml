@@ -1,0 +1,20 @@
+name: telegram-chatbot
+
+services:
+  server:
+    container_name: telegram-chatbot
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    mem_limit: 1G
+    env_file:
+      - path: .env
+        required: true
+    ports:
+      - "127.0.0.1:3000:3000"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
