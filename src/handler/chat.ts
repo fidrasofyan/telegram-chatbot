@@ -267,18 +267,6 @@ async function processChat(req: {
   let lastSentCharCount = 0;
 
   try {
-    // Context7
-    // const context7Client = await createMCPClient({
-    //   transport: {
-    //     type: 'http',
-    //     url: config.CONTEXT7_API_URL,
-    //     headers: {
-    //       CONTEXT7_API_KEY: config.CONTEXT7_API_KEY,
-    //     },
-    //   },
-    // });
-    // const context7Tool = await context7Client.tools();
-
     // Stream response
     const result = streamText({
       model,
@@ -286,16 +274,11 @@ async function processChat(req: {
       maxOutputTokens: 8192,
       system: thread.system_prompt,
       messages: messages,
-      // stopWhen: stepCountIs(10),
-      // tools: {
-      //   ...context7Tool,
-      // },
       onError: ({ error }) => {
         fullResponse = `Error: ${error}`;
       },
       onFinish: async ({ text }) => {
         fullResponse = text;
-        // await context7Client.close();
       },
     });
 
@@ -368,6 +351,7 @@ async function processChat(req: {
       message_thread_id: req.threadID,
       parse_mode: 'MarkdownV2',
       text: telegramifyMarkdown(part, 'escape'),
+      // Only set reply markup on the last message
       reply_markup:
         index === parts.length - 1
           ? DEFAULT_REPLY_MARKUP
