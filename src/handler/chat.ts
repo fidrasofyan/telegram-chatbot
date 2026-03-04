@@ -172,7 +172,7 @@ async function processChat(req: {
       chat_id: req.chatID,
       message_thread_id: req.threadID,
       parse_mode: 'HTML',
-      text: `<i>Please choose a model first</i>`,
+      text: `<i>Please choose a model first. If you don't want to choose a model every time, set a default model.</i>`,
       reply_markup: DEFAULT_REPLY_MARKUP,
     });
     return;

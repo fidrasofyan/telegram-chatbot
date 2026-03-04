@@ -30,7 +30,7 @@ export const BOT_COMMANDS: BotCommand[] = [
   },
   {
     command: 'default_model',
-    description: 'Choose default model for new thread',
+    description: 'Set default model for new thread',
   },
   {
     command: 'translator',
