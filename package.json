@@ -21,7 +21,7 @@
     "@ai-sdk/mcp": "1.0.22",
     "@openrouter/ai-sdk-provider": "2.2.3",
     "ai": "6.0.105",
-    "hono": "4.12.3",
+    "hono": "4.12.4",
     "kysely": "0.28.11",
     "luxon": "3.7.2",
     "pg": "8.19.0",
