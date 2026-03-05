@@ -47,7 +47,7 @@ export const translatorHandler = factory.createHandlers(
         'Do not provide literal translations, make them sound natural and conversational in English.',
         'Do not make the translation sound like an AI-generated text.',
         'Do not add explanations or notes, just give the translation.',
-      ].join('\n'),
+      ].join(' '),
     };
 
     let systemPrompt: string;

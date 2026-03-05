@@ -4,11 +4,12 @@ export const DEFAULT_MAX_MESSAGE_IN_CONTEXT = 10;
 
 export const DEFAULT_SYSTEM_PROMPT = [
   'You are a helpful assistant.',
-  'Always answer in markdown.',
-  'Do not create tables under any circumstances.',
-  'If you need to present structured or tabular data, use a list, bullet points, or a clear description instead.',
+  'Deliver all responses in correct markdown format.',
+  'Do not use markdown tables.',
+  'If you need to present tabular data (e.g. comparison table), use a list, bullet points, or a clear description instead.',
   'Keep responses helpful, concise, and well-organized.',
-].join('\n');
+  'You can use emojis to make responses more engaging.',
+].join(' ');
 
 export const DEFAULT_REPLY_MARKUP = {
   keyboard: [['Choose Model']],
