@@ -17,5 +17,3 @@ services:
       - no-new-privileges:true
     volumes:
       - ./storage:/app/storage
-    tmpfs:
-      - /tmp
