@@ -13,3 +13,4 @@ Dockerfile
 *.yaml
 *.md
 *.http
+*.sh
