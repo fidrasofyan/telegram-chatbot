@@ -261,22 +261,42 @@ async function processChat(req: {
       },
     });
 
-    for await (const delta of result.textStream) {
-      fullResponse += delta;
+    for await (const part of result.fullStream) {
+      switch (part.type) {
+        // Reasoning start
+        case 'reasoning-start': {
+          await sendMessageDraft({
+            chat_id: req.chatID,
+            message_thread_id: req.threadID,
+            draft_id: Number(userMessage.id),
+            parse_mode: 'HTML',
+            text: '<i>Thinking...</i>',
+          });
+          break;
+        }
+        // Text delta
+        case 'text-delta': {
+          fullResponse += part.text;
 
-      // Only send if character count increased by at least 128 or contains a newline
-      if (
-        fullResponse.length >= lastSentCharCount + 128 ||
-        delta.includes('\n')
-      ) {
-        await sendMessageDraft({
-          chat_id: req.chatID,
-          message_thread_id: req.threadID,
-          draft_id: Number(userMessage.id),
-          parse_mode: 'MarkdownV2',
-          text: telegramifyMarkdown(fullResponse, 'escape'),
-        });
-        lastSentCharCount = fullResponse.length;
+          // Only send if character count increased by at least 128
+          if (
+            fullResponse.length >=
+            lastSentCharCount + 128
+          ) {
+            await sendMessageDraft({
+              chat_id: req.chatID,
+              message_thread_id: req.threadID,
+              draft_id: Number(userMessage.id),
+              parse_mode: 'MarkdownV2',
+              text: telegramifyMarkdown(
+                fullResponse,
+                'escape',
+              ),
+            });
+            lastSentCharCount = fullResponse.length;
+          }
+          break;
+        }
       }
     }
   } catch (error) {
