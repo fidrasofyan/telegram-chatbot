@@ -39,11 +39,13 @@ export async function up(db: Kysely<any>): Promise<void> {
     CREATE INDEX IF NOT EXISTS "users_created_at_idx" ON "users" ("created_at" DESC);
 
     -- threads
+    CREATE TYPE output_format AS ENUM ('text', 'image', 'audio', 'video', 'embed');
     CREATE TABLE IF NOT EXISTS threads (
       "id" BIGSERIAL PRIMARY KEY,
       "chat_id" BIGINT NOT NULL,
       "title" VARCHAR(200),
       "model_id" BIGINT,
+      "output_format" output_format NOT NULL,
       "max_messages_in_context" INT NOT NULL,
       "system_prompt" TEXT NOT NULL,
       "last_command" VARCHAR(100),
@@ -83,6 +85,7 @@ export async function down(db: Kysely<any>): Promise<void> {
     DROP TABLE IF EXISTS messages;
     DROP TYPE IF EXISTS message_role;
     DROP TABLE IF EXISTS threads;
+    DROP TYPE IF EXISTS output_format;
     DROP TABLE IF EXISTS users;
     DROP TABLE IF EXISTS models;
     DROP TABLE IF EXISTS providers;

@@ -147,6 +147,7 @@ export const authMiddleware = createMiddleware(
           id: req.threadID,
           chat_id: req.chatID,
           title,
+          output_format: 'text',
           max_messages_in_context:
             DEFAULT_MAX_MESSAGE_IN_CONTEXT,
           system_prompt: DEFAULT_SYSTEM_PROMPT,

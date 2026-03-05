@@ -25,6 +25,8 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type MessageRole = "assistant" | "tool" | "user";
 
+export type OutputFormat = "audio" | "embed" | "image" | "text" | "video";
+
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export interface Messages {
@@ -63,6 +65,7 @@ export interface Threads {
   max_messages_in_context: number;
   model_id: Int8 | null;
   next_step: number | null;
+  output_format: OutputFormat;
   system_prompt: string;
   title: string | null;
   updated_at: Timestamp | null;

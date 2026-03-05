@@ -45,6 +45,7 @@ export const promptGeneratorHandler =
         chatID: req.chatID,
         threadID: req.threadID,
         title,
+        outputFormat: 'text',
         maxMessagesInContext: 0,
         systemPrompt,
       });

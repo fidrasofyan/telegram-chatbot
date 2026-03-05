@@ -83,6 +83,7 @@ export const translatorHandler = factory.createHandlers(
         chatID: req.chatID,
         threadID: req.threadID,
         title,
+        outputFormat: 'text',
         maxMessagesInContext: 0,
         systemPrompt,
       });

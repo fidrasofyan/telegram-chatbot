@@ -1,5 +1,8 @@
 import { db } from '@/database';
-import type { JsonValue } from '@/database/generated-types';
+import type {
+  JsonValue,
+  OutputFormat,
+} from '@/database/generated-types';
 import { editForumTopic, normalizeModelName } from '@/util';
 
 export async function setSession(data: {
@@ -72,6 +75,7 @@ export async function updateThread(data: {
   chatID: number;
   threadID: number;
   title: string;
+  outputFormat: OutputFormat;
   maxMessagesInContext: number;
   systemPrompt: string;
 }) {
@@ -80,6 +84,7 @@ export async function updateThread(data: {
     .updateTable('threads')
     .set({
       title: data.title,
+      output_format: data.outputFormat,
       max_messages_in_context: data.maxMessagesInContext,
       system_prompt: data.systemPrompt,
       updated_at: new Date(),

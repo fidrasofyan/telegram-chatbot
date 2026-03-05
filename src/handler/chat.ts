@@ -73,6 +73,7 @@ export const chatHandler = factory.createHandlers(
         chatID: req.chatID,
         threadID: req.threadID,
         title,
+        outputFormat: 'text',
         maxMessagesInContext:
           DEFAULT_MAX_MESSAGE_IN_CONTEXT,
         systemPrompt: DEFAULT_SYSTEM_PROMPT,
@@ -260,7 +261,7 @@ async function processChat(req: {
     .returning(['id', 'role', 'content'])
     .executeTakeFirstOrThrow();
 
-  // Get messages for context
+  // Single message for max_messages_in_context = 0
   let messages: ModelMessage[] = [
     {
       role: userMessage.role as any,
@@ -273,6 +274,7 @@ async function processChat(req: {
     },
   ];
 
+  // Get messages for context
   if (Number(thread.max_messages_in_context) !== 0) {
     const history = await db
       .selectFrom('messages')
@@ -381,7 +383,24 @@ async function processChat(req: {
     fullResponse = `Error: ${error}`;
   }
 
-  // Save assistant message
+  // Send final response in parts (max 3500 chars) to avoid Telegram message limit
+  const parts = splitMarkdown(fullResponse, 3500);
+
+  for (const [index, part] of parts.entries()) {
+    await sendMessage({
+      chat_id: req.chatID,
+      message_thread_id: req.threadID,
+      parse_mode: 'MarkdownV2',
+      text: telegramifyMarkdown(part, 'escape'),
+      // Only set reply markup on the last message
+      reply_markup:
+        index === parts.length - 1
+          ? DEFAULT_REPLY_MARKUP
+          : undefined,
+    });
+  }
+
+  // Save assistant message if max_messages_in_context is not 0
   if (Number(thread.max_messages_in_context) !== 0) {
     await db
       .insertInto('messages')
@@ -416,22 +435,5 @@ async function processChat(req: {
       .where('role', '!=', 'tool')
       .where('id', '<=', oldestToKeep.id)
       .execute();
-  }
-
-  // Send final response in parts (max 3500 chars) to avoid Telegram message limit
-  const parts = splitMarkdown(fullResponse, 3500);
-
-  for (const [index, part] of parts.entries()) {
-    await sendMessage({
-      chat_id: req.chatID,
-      message_thread_id: req.threadID,
-      parse_mode: 'MarkdownV2',
-      text: telegramifyMarkdown(part, 'escape'),
-      // Only set reply markup on the last message
-      reply_markup:
-        index === parts.length - 1
-          ? DEFAULT_REPLY_MARKUP
-          : undefined,
-    });
   }
 }
