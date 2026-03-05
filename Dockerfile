@@ -9,15 +9,11 @@ RUN bun install --frozen-lockfile
 FROM oven/bun:1.3.10-alpine AS production
 WORKDIR /app
 
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -S appuser -u 1001 -G appgroup
-
-COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
-COPY --chown=appuser:appgroup . .
+COPY --from=builder /app/node_modules ./node_modules
+COPY . .
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
-USER appuser
 EXPOSE 3000
 CMD ["bun", "run", "src/app.ts"]
