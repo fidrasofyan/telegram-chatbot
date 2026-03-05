@@ -5,8 +5,12 @@ import type {
   TelegramReplyKeyboardMarkup,
 } from './types';
 
-const telegramApiUrl =
+const TELEGRAM_API_URL =
   'https://api.telegram.org/bot' +
+  config.TELEGRAM_BOT_TOKEN;
+
+const TELEGRAM_FILE_URL =
+  'https://api.telegram.org/file/bot' +
   config.TELEGRAM_BOT_TOKEN;
 
 export async function sendChatAction(data: {
@@ -25,7 +29,7 @@ export async function sendChatAction(data: {
     | 'record_video_note'
     | 'upload_video_note';
 }) {
-  await fetch(`${telegramApiUrl}/sendChatAction`, {
+  await fetch(`${TELEGRAM_API_URL}/sendChatAction`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -43,7 +47,7 @@ export async function sendMessage(data: {
     | TelegramReplyKeyboardMarkup
     | TelegramInlineKeyboardMarkup;
 }) {
-  await fetch(`${telegramApiUrl}/sendMessage`, {
+  await fetch(`${TELEGRAM_API_URL}/sendMessage`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -59,7 +63,7 @@ export async function sendMessageDraft(data: {
   parse_mode?: 'HTML' | 'MarkdownV2';
   text: string;
 }) {
-  await fetch(`${telegramApiUrl}/sendMessageDraft`, {
+  await fetch(`${TELEGRAM_API_URL}/sendMessageDraft`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -73,7 +77,7 @@ export async function editForumTopic(params: {
   message_thread_id: number;
   name: string;
 }) {
-  await fetch(`${telegramApiUrl}/editForumTopic`, {
+  await fetch(`${TELEGRAM_API_URL}/editForumTopic`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -86,7 +90,7 @@ export async function deleteForumTopic(data: {
   chat_id: number;
   message_thread_id: number;
 }) {
-  await fetch(`${telegramApiUrl}/deleteForumTopic`, {
+  await fetch(`${TELEGRAM_API_URL}/deleteForumTopic`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -95,11 +99,66 @@ export async function deleteForumTopic(data: {
   });
 }
 
+export async function getFile(file_id: string) {
+  const response = await fetch(
+    `${TELEGRAM_API_URL}/getFile`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ file_id }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to get file');
+  }
+
+  return (await response.json()) as {
+    ok: boolean;
+    result: {
+      file_id: string;
+      file_unique_id: string;
+      file_size: number;
+      file_path: string;
+    };
+  };
+}
+
+export async function downloadFile(
+  fileID: string,
+): Promise<string> {
+  const file = await getFile(fileID);
+  const url = `${TELEGRAM_FILE_URL}/${file.result.file_path}`;
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    await response.body?.cancel();
+    throw new Error(
+      `Failed to download file. Status: ${response.status}`,
+    );
+  }
+
+  const fileFormat = file.result.file_path.split('.').pop();
+
+  await Bun.write(
+    `./storage/${file.result.file_unique_id}${fileFormat ? `.${fileFormat}` : ''}`,
+    response,
+  );
+
+  return (
+    file.result.file_unique_id +
+    (fileFormat ? `.${fileFormat}` : '')
+  );
+}
+
 export async function setTelegramWebhook() {
   try {
     // setWebhook
     const result = await fetch(
-      `${telegramApiUrl}/setWebhook`,
+      `${TELEGRAM_API_URL}/setWebhook`,
       {
         method: 'POST',
         headers: {
@@ -121,7 +180,7 @@ export async function setTelegramWebhook() {
     }
 
     // setMyCommands
-    await fetch(`${telegramApiUrl}/setMyCommands`, {
+    await fetch(`${TELEGRAM_API_URL}/setMyCommands`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

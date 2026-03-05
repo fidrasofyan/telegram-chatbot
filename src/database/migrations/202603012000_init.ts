@@ -66,6 +66,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       "model" VARCHAR(200),
       "role" message_role NOT NULL,
       "content" TEXT NOT NULL,
+      "asset" JSONB,
       "created_at" TIMESTAMPTZ NOT NULL,
       "updated_at" TIMESTAMPTZ,
       CONSTRAINT "messages_chat_id_fk" FOREIGN KEY ("chat_id") REFERENCES "users" ("id") ON UPDATE CASCADE ON DELETE CASCADE,

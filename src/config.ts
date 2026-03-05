@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import packageJson from '../package.json';
 
 function readEnvSync(name: string): string {
@@ -67,6 +67,9 @@ if (!validNodeEnvs.includes(config.NODE_ENV)) {
   console.error(`Invalid NODE_ENV: ${config.NODE_ENV}`);
   process.exit(1);
 }
+
+// Create storage directory
+mkdirSync('./storage', { recursive: true });
 
 console.log(
   `Runtime: ${Bun.version} - Env: ${config.NODE_ENV} - Version: v${packageJson.version}`,

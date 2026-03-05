@@ -28,6 +28,7 @@ export type MessageRole = "assistant" | "tool" | "user";
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export interface Messages {
+  asset: Json | null;
   chat_id: Int8;
   content: string;
   created_at: Timestamp;

@@ -35,6 +35,23 @@ export type TelegramChat = {
   last_name?: string;
 };
 
+export type TelegramPhoto = {
+  file_id: string;
+  file_unique_id: string;
+  file_size: number;
+  width: number;
+  height: number;
+};
+
+export type TelegramVideo = {
+  file_id: string;
+  file_unique_id: string;
+  file_size: number;
+  width: number;
+  height: number;
+  duration: number;
+};
+
 export type TelegramInlineKeyboardMarkup = {
   inline_keyboard: {
     text: string;
@@ -49,6 +66,9 @@ export type TelegramMessage = {
   date: number;
   chat: TelegramChat;
   text?: string;
+  caption?: string;
+  photo?: TelegramPhoto[];
+  video?: TelegramVideo;
 };
 
 export type TelegramReplyKeyboardMarkup = {

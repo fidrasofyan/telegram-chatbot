@@ -6,6 +6,7 @@ import {
 } from '@/constant';
 import { db } from '@/database';
 import type {
+  TelegramPhoto,
   TelegramRequest,
   TelegramResponse,
 } from '@/types';
@@ -34,19 +35,23 @@ export const authMiddleware = createMiddleware(
       threadID: number;
       chatID: number;
       text: string | null;
+      photo: TelegramPhoto[];
     } = {
       isCallbackQuery: false,
       messageID: 0,
       threadID: 0,
       chatID: 0,
       text: null,
+      photo: [],
     };
 
     if (body.message) {
       req.messageID = body.message.message_id;
       req.threadID = body.message.message_thread_id;
       req.chatID = body.message.chat.id;
-      req.text = body.message.text || null;
+      req.text =
+        body.message.text || body.message.caption || null;
+      req.photo = body.message.photo || [];
     } else if (body.callback_query) {
       req.isCallbackQuery = true;
       req.messageID =
@@ -55,6 +60,7 @@ export const authMiddleware = createMiddleware(
         body.callback_query.message!.message_thread_id;
       req.chatID = body.callback_query.message!.chat.id;
       req.text = body.callback_query.message!.text || null;
+      req.photo = [];
     }
 
     // Only allow messages in threads
@@ -81,6 +87,25 @@ export const authMiddleware = createMiddleware(
 
     // Ignore non-text messages
     if (!req.text) {
+      if (body.message?.video) {
+        return c.json({
+          method: 'sendMessage',
+          chat_id: req.chatID,
+          message_thread_id: req.threadID,
+          parse_mode: 'HTML',
+          text: '<i>Video is not supported</i>',
+        } satisfies TelegramResponse);
+      }
+
+      if (req.photo.length > 0) {
+        return c.json({
+          method: 'sendMessage',
+          chat_id: req.chatID,
+          message_thread_id: req.threadID,
+          parse_mode: 'HTML',
+          text: '<i>Missing prompt. Please send a photo with a prompt</i>',
+        } satisfies TelegramResponse);
+      }
       return c.json({});
     }
 

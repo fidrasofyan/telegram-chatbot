@@ -1,6 +1,8 @@
+.DS_Store
 .devtools
 .vscode
 node_modules
+storage
 .dockerignore
 .env
 .env.*

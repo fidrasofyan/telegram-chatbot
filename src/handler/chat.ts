@@ -2,9 +2,11 @@ import { devToolsMiddleware } from '@ai-sdk/devtools';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import {
   createGateway,
+  type ImagePart,
   type LanguageModel,
   type ModelMessage,
   streamText,
+  type UserModelMessage,
   wrapLanguageModel,
 } from 'ai';
 import { createFactory } from 'hono/factory';
@@ -19,16 +21,23 @@ import {
 import { db } from '@/database';
 import { updateThread } from '@/repository/telegram';
 import type {
+  TelegramPhoto,
   TelegramRequest,
   TelegramResponse,
 } from '@/types';
 import {
+  downloadFile,
   editForumTopic,
   normalizeModelName,
   sendMessage,
   sendMessageDraft,
   splitMarkdown,
 } from '@/util';
+
+type Asset = {
+  file_id: string;
+  file_type: 'image';
+};
 
 const factory = createFactory();
 
@@ -47,7 +56,8 @@ export const chatHandler = factory.createHandlers(
     const req = {
       chatID: body.message?.chat.id,
       threadID: body.message?.message_thread_id,
-      text: body.message?.text,
+      text: body.message?.text || body.message?.caption,
+      photo: body.message?.photo || [],
     };
 
     if (!req.chatID || !req.threadID || !req.text) {
@@ -83,9 +93,19 @@ export const chatHandler = factory.createHandlers(
       chatID: req.chatID,
       threadID: req.threadID,
       text: req.text,
+      photo: req.photo,
     }).catch((error) => {
       // TODO: save error message to db
       console.error(error);
+
+      if (req.chatID && req.threadID) {
+        sendMessage({
+          chat_id: req.chatID,
+          message_thread_id: req.threadID,
+          parse_mode: 'HTML',
+          text: '<i>Something went wrong</i>',
+        });
+      }
     });
 
     // Return immediately to avoid timeout
@@ -97,6 +117,7 @@ async function processChat(req: {
   chatID: number;
   threadID: number;
   text: string;
+  photo: TelegramPhoto[];
 }) {
   // Get thread
   const thread = await db
@@ -205,6 +226,26 @@ async function processChat(req: {
       throw new Error('Unknown provider');
   }
 
+  // Get asset
+  let asset: Asset | undefined;
+  if (req.photo.length > 0) {
+    const targetWidth = 600;
+    const photo = req.photo.reduce((prev, current) => {
+      const prevDiff = Math.abs(prev.width - targetWidth);
+      const currDiff = Math.abs(
+        current.width - targetWidth,
+      );
+      return currDiff < prevDiff ? current : prev;
+    });
+
+    if (photo) {
+      asset = {
+        file_id: await downloadFile(photo.file_id),
+        file_type: 'image',
+      };
+    }
+  }
+
   // Save user message. ID is used as draft_id
   const userMessage = await db
     .insertInto('messages')
@@ -213,6 +254,7 @@ async function processChat(req: {
       thread_id: req.threadID,
       role: 'user',
       content: req.text,
+      asset,
       created_at: new Date(),
     })
     .returning(['id', 'role', 'content'])
@@ -222,24 +264,59 @@ async function processChat(req: {
   let messages: ModelMessage[] = [
     {
       role: userMessage.role as any,
-      content: userMessage.content,
+      content: [
+        {
+          type: 'text',
+          text: userMessage.content,
+        },
+      ],
     },
   ];
 
   if (Number(thread.max_messages_in_context) !== 0) {
     const history = await db
       .selectFrom('messages')
-      .select(['role', 'content'])
+      .select(['role', 'content', 'asset'])
       .where('chat_id', '=', `${req.chatID}`)
       .where('thread_id', '=', `${req.threadID}`)
       .orderBy('created_at', 'desc')
       .limit(thread.max_messages_in_context)
       .execute();
 
-    messages = history.reverse().map((m) => ({
-      role: m.role as any,
-      content: m.content,
-    }));
+    const reversedHistory = history.reverse();
+    messages = await Promise.all(
+      reversedHistory.map(async (m) => {
+        const message: UserModelMessage = {
+          role: m.role as any,
+          content: [
+            {
+              type: 'text',
+              text: m.content,
+            },
+          ],
+        };
+
+        if (m.asset) {
+          const asset = m.asset as Asset;
+
+          switch (asset.file_type) {
+            case 'image': {
+              const image = await Bun.file(
+                `./storage/${asset.file_id}`,
+              ).arrayBuffer();
+
+              (message.content as Array<ImagePart>).push({
+                type: 'image',
+                image,
+              });
+              break;
+            }
+          }
+        }
+
+        return message;
+      }),
+    );
   }
 
   let fullResponse = '';
