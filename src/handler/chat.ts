@@ -237,7 +237,10 @@ async function processChat(req: {
 
     if (photo) {
       asset = {
-        file_id: await downloadFile(photo.file_id),
+        file_id: await downloadFile(
+          photo.file_id,
+          `${req.chatID}-${req.threadID}`,
+        ),
         file_type: 'image',
       };
     }
@@ -296,7 +299,7 @@ async function processChat(req: {
 
         if (m.asset) {
           const asset = m.asset as Asset;
-          const filePath = `./storage/${asset.file_id}`;
+          const filePath = `./storage/${req.chatID}-${req.threadID}/${asset.file_id}`;
 
           switch (asset.file_type) {
             case 'image': {
@@ -403,40 +406,16 @@ async function processChat(req: {
     });
   }
 
-  // Save assistant message if max_messages_in_context is not 0
-  if (Number(thread.max_messages_in_context) !== 0) {
-    await db
-      .insertInto('messages')
-      .values({
-        chat_id: req.chatID,
-        thread_id: req.threadID,
-        model: thread.model.model_id,
-        role: 'assistant',
-        content: fullResponse,
-        created_at: new Date(),
-      })
-      .execute();
-  }
-
-  // Keep only last N messages for this thread
-  const oldestToKeep = await db
-    .selectFrom('messages')
-    .select('id')
-    .where('chat_id', '=', `${req.chatID}`)
-    .where('thread_id', '=', `${req.threadID}`)
-    .where('role', '!=', 'tool')
-    .orderBy('created_at', 'desc')
-    .offset(thread.max_messages_in_context)
-    .limit(1)
-    .executeTakeFirst();
-
-  if (oldestToKeep) {
-    await db
-      .deleteFrom('messages')
-      .where('chat_id', '=', `${req.chatID}`)
-      .where('thread_id', '=', `${req.threadID}`)
-      .where('role', '!=', 'tool')
-      .where('id', '<=', oldestToKeep.id)
-      .execute();
-  }
+  // Save assistant message
+  await db
+    .insertInto('messages')
+    .values({
+      chat_id: req.chatID,
+      thread_id: req.threadID,
+      model: thread.model.model_id,
+      role: 'assistant',
+      content: fullResponse,
+      created_at: new Date(),
+    })
+    .execute();
 }

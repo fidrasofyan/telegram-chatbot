@@ -128,6 +128,7 @@ export async function getFile(file_id: string) {
 
 export async function downloadFile(
   fileID: string,
+  storagePath: string,
 ): Promise<string> {
   const file = await getFile(fileID);
   const url = `${TELEGRAM_FILE_URL}/${file.result.file_path}`;
@@ -144,8 +145,11 @@ export async function downloadFile(
   const fileFormat = file.result.file_path.split('.').pop();
 
   await Bun.write(
-    `./storage/${file.result.file_unique_id}${fileFormat ? `.${fileFormat}` : ''}`,
+    `./storage/${storagePath}/${file.result.file_unique_id}${fileFormat ? `.${fileFormat}` : ''}`,
     response,
+    {
+      createPath: true,
+    },
   );
 
   return (

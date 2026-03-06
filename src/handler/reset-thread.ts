@@ -1,8 +1,8 @@
+import { rm } from 'node:fs/promises';
 import { createFactory } from 'hono/factory';
 import { DEFAULT_REPLY_MARKUP } from '@/constant';
 import { db } from '@/database';
 import type {
-  Asset,
   TelegramRequest,
   TelegramResponse,
 } from '@/types';
@@ -29,27 +29,10 @@ export const resetThreadHandler = factory.createHandlers(
     }
 
     // Delete assets
-    const assets = (await db
-      .selectFrom('messages')
-      .select('asset')
-      .where('chat_id', '=', `${req.chatID}`)
-      .where('thread_id', '=', `${req.threadID}`)
-      .where('asset', 'is not', null)
-      .execute()) as { asset: Asset }[];
-
-    const fileIDs = assets.map(
-      (asset) => asset.asset.file_id,
-    );
-
-    for (const fileID of fileIDs) {
-      const exists = await Bun.file(
-        `./storage/${fileID}`,
-      ).exists();
-
-      if (exists) {
-        await Bun.file(`./storage/${fileID}`).delete();
-      }
-    }
+    await rm(`./storage/${req.chatID}-${req.threadID}`, {
+      recursive: true,
+      force: true,
+    });
 
     // Delete messages
     await db
