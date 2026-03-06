@@ -21,6 +21,7 @@ import {
 import { db } from '@/database';
 import { updateThread } from '@/repository/telegram';
 import type {
+  Asset,
   TelegramPhoto,
   TelegramRequest,
   TelegramResponse,
@@ -33,11 +34,6 @@ import {
   sendMessageDraft,
   splitMarkdown,
 } from '@/util';
-
-type Asset = {
-  file_id: string;
-  file_type: 'image';
-};
 
 const factory = createFactory();
 

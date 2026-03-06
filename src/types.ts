@@ -1,5 +1,10 @@
 // App types
 
+export type Asset = {
+  file_id: string;
+  file_type: 'image';
+};
+
 export type TelegramRequest = {
   update_id: number;
   message?: TelegramMessage;

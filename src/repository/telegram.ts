@@ -3,6 +3,7 @@ import type {
   JsonValue,
   OutputFormat,
 } from '@/database/generated-types';
+import type { Asset } from '@/types';
 import { editForumTopic, normalizeModelName } from '@/util';
 
 export async function setSession(data: {
@@ -93,7 +94,30 @@ export async function updateThread(data: {
     .where('chat_id', '=', `${data.chatID}`)
     .executeTakeFirstOrThrow();
 
-  // Reset messages
+  // Delete assets
+  const assets = (await db
+    .selectFrom('messages')
+    .select('asset')
+    .where('chat_id', '=', `${data.chatID}`)
+    .where('thread_id', '=', `${data.threadID}`)
+    .where('asset', 'is not', null)
+    .execute()) as { asset: Asset }[];
+
+  const fileIDs = assets.map(
+    (asset) => asset.asset.file_id,
+  );
+
+  for (const fileID of fileIDs) {
+    const exists = await Bun.file(
+      `./storage/${fileID}`,
+    ).exists();
+
+    if (exists) {
+      await Bun.file(`./storage/${fileID}`).delete();
+    }
+  }
+
+  // Delete messages
   await db
     .deleteFrom('messages')
     .where('chat_id', '=', `${data.chatID}`)

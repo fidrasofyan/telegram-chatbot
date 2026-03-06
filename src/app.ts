@@ -9,6 +9,7 @@ import { enableModelHandler } from './handler/enable-model';
 import { fetchModelsHandler } from './handler/fetch-models';
 import { notFoundHandler } from './handler/not-found';
 import { promptGeneratorHandler } from './handler/prompt-generator';
+import { resetThreadHandler } from './handler/reset-thread';
 import { translatorHandler } from './handler/translator';
 import { authMiddleware } from './middleware/auth';
 import { loggerMiddleware } from './middleware/logger';
@@ -33,7 +34,7 @@ app.post(
   ...disableModelHandler,
   ...chooseDefaultModelHandler,
   ...chooseModelHandler,
-  // ...deleteTopicHandler,
+  ...resetThreadHandler,
   ...translatorHandler,
   ...promptGeneratorHandler,
   // The order after this matters

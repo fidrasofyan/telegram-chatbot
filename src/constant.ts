@@ -12,7 +12,7 @@ export const DEFAULT_SYSTEM_PROMPT = [
 ].join(' ');
 
 export const DEFAULT_REPLY_MARKUP = {
-  keyboard: [['Choose Model']],
+  keyboard: [['Choose Model', 'Reset Thread']],
   resize_keyboard: true,
 };
 
