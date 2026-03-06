@@ -296,12 +296,19 @@ async function processChat(req: {
 
         if (m.asset) {
           const asset = m.asset as Asset;
+          const filePath = `./storage/${asset.file_id}`;
 
           switch (asset.file_type) {
             case 'image': {
-              const image = await Bun.file(
-                `./storage/${asset.file_id}`,
-              ).arrayBuffer();
+              const exists =
+                await Bun.file(filePath).exists();
+
+              if (!exists) {
+                break;
+              }
+
+              const image =
+                await Bun.file(filePath).arrayBuffer();
 
               (message.content as Array<ImagePart>).push({
                 type: 'image',
