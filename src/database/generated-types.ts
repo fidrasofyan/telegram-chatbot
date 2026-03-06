@@ -25,7 +25,7 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type MessageRole = "assistant" | "tool" | "user";
 
-export type OutputFormat = "audio" | "embed" | "image" | "text" | "video";
+export type OutputFormat = "audio" | "embedding" | "image" | "text" | "video";
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 

@@ -39,7 +39,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     CREATE INDEX IF NOT EXISTS "users_created_at_idx" ON "users" ("created_at" DESC);
 
     -- threads
-    CREATE TYPE output_format AS ENUM ('text', 'image', 'audio', 'video', 'embed');
+    CREATE TYPE output_format AS ENUM ('text', 'image', 'audio', 'video', 'embedding');
     CREATE TABLE IF NOT EXISTS threads (
       "id" BIGSERIAL PRIMARY KEY,
       "chat_id" BIGINT NOT NULL,

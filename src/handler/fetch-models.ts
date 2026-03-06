@@ -18,13 +18,13 @@ export const fetchModelsHandler = factory.createHandlers(
     }
 
     const req = {
-      messageThreadId: body.message.message_thread_id,
-      messageId: body.message.message_id,
-      chatId: body.message.chat.id,
+      messageID: body.message.message_id,
+      chatID: body.message.chat.id,
+      threadID: body.message.message_thread_id,
       text: body.message.text,
     };
 
-    if (!req.chatId || !req.messageThreadId || !req.text) {
+    if (!req.chatID || !req.threadID || !req.text) {
       return next();
     }
 
@@ -40,8 +40,8 @@ export const fetchModelsHandler = factory.createHandlers(
 
       return c.json({
         method: 'sendMessage',
-        message_thread_id: req.messageThreadId,
-        chat_id: req.chatId,
+        message_thread_id: req.threadID,
+        chat_id: req.chatID,
         parse_mode: 'HTML',
         text: '<i>Models have been successfully updated</i>',
       } satisfies TelegramResponse);
@@ -49,8 +49,8 @@ export const fetchModelsHandler = factory.createHandlers(
       console.error(error);
       return c.json({
         method: 'sendMessage',
-        message_thread_id: req.messageThreadId,
-        chat_id: req.chatId,
+        message_thread_id: req.threadID,
+        chat_id: req.chatID,
         parse_mode: 'HTML',
         text: '<i>Failed to fetch models</i>',
       } satisfies TelegramResponse);
@@ -64,44 +64,63 @@ const vercelAI = createGateway({
 });
 
 async function fetchVercelAIModels() {
-  // Create provider
-  const vercelAIProvider = await db
-    .insertInto('providers')
-    .values({
-      id: 'vercel-ai',
-      name: 'Vercel',
-    })
-    .returning(['id'])
-    .onConflict((oc) =>
-      oc.column('id').doUpdateSet({
-        name: (eb) => eb.ref('excluded.name'),
-      }),
-    )
-    .executeTakeFirstOrThrow();
-
   const availableModels =
     await vercelAI.getAvailableModels();
 
-  await db
-    .insertInto('models')
-    .values(
-      availableModels.models.map((model) => ({
-        provider_id: vercelAIProvider.id,
-        model_id: model.id,
-        model_name: model.name,
-        model_context_length: null,
-        model_description: model.description || null,
-        is_enabled: false,
-      })),
-    )
-    .onConflict((oc) =>
-      oc.columns(['provider_id', 'model_id']).doUpdateSet({
-        model_name: (eb) => eb.ref('excluded.model_name'),
-        model_description: (eb) =>
-          eb.ref('excluded.model_description'),
-      }),
-    )
-    .execute();
+  if (!availableModels.models.length) {
+    return;
+  }
+
+  const modelIds = availableModels.models.map((m) => m.id);
+
+  await db.transaction().execute(async (trx) => {
+    // Create provider
+    const vercelAIProvider = await trx
+      .insertInto('providers')
+      .values({
+        id: 'vercel-ai',
+        name: 'Vercel',
+      })
+      .returning(['id'])
+      .onConflict((oc) =>
+        oc.column('id').doUpdateSet({
+          name: (eb) => eb.ref('excluded.name'),
+        }),
+      )
+      .executeTakeFirstOrThrow();
+
+    // Insert models
+    await trx
+      .insertInto('models')
+      .values(
+        availableModels.models.map((model) => ({
+          provider_id: vercelAIProvider.id,
+          model_id: model.id,
+          model_name: model.name,
+          model_context_length: null,
+          model_description: model.description || null,
+          is_enabled: false,
+        })),
+      )
+      .onConflict((oc) =>
+        oc
+          .columns(['provider_id', 'model_id'])
+          .doUpdateSet({
+            model_name: (eb) =>
+              eb.ref('excluded.model_name'),
+            model_description: (eb) =>
+              eb.ref('excluded.model_description'),
+          }),
+      )
+      .execute();
+
+    // Delete obsolete models
+    await trx
+      .deleteFrom('models')
+      .where('provider_id', '=', vercelAIProvider.id)
+      .where('model_id', 'not in', modelIds)
+      .execute();
+  });
 }
 
 // OpenRouter
@@ -123,21 +142,6 @@ type OpenRouterModel = {
 };
 
 async function fetchOpenRouterModels() {
-  // Create provider
-  const openRouterProvider = await db
-    .insertInto('providers')
-    .values({
-      id: 'openrouter',
-      name: 'OR',
-    })
-    .returning(['id'])
-    .onConflict((oc) =>
-      oc.column('id').doUpdateSet({
-        name: (eb) => eb.ref('excluded.name'),
-      }),
-    )
-    .executeTakeFirstOrThrow();
-
   const result = await fetch(
     `${config.OPENROUTER_API_URL}/models`,
     {
@@ -155,24 +159,58 @@ async function fetchOpenRouterModels() {
     data: OpenRouterModel[];
   };
 
-  await db
-    .insertInto('models')
-    .values(
-      data.map((model) => ({
-        provider_id: openRouterProvider.id,
-        model_id: model.id,
-        model_name: model.name,
-        model_context_length: model.context_length,
-        model_description: model.description,
-        is_enabled: false,
-      })),
-    )
-    .onConflict((oc) =>
-      oc.columns(['provider_id', 'model_id']).doUpdateSet({
-        model_name: (eb) => eb.ref('excluded.model_name'),
-        model_description: (eb) =>
-          eb.ref('excluded.model_description'),
-      }),
-    )
-    .execute();
+  if (!data.length) {
+    return;
+  }
+
+  const modelIds = data.map((m) => m.id);
+
+  await db.transaction().execute(async (trx) => {
+    // Create provider
+    const openRouterProvider = await trx
+      .insertInto('providers')
+      .values({
+        id: 'openrouter',
+        name: 'OR',
+      })
+      .returning(['id'])
+      .onConflict((oc) =>
+        oc.column('id').doUpdateSet({
+          name: (eb) => eb.ref('excluded.name'),
+        }),
+      )
+      .executeTakeFirstOrThrow();
+
+    // Insert models
+    await trx
+      .insertInto('models')
+      .values(
+        data.map((model) => ({
+          provider_id: openRouterProvider.id,
+          model_id: model.id,
+          model_name: model.name,
+          model_context_length: model.context_length,
+          model_description: model.description,
+          is_enabled: false,
+        })),
+      )
+      .onConflict((oc) =>
+        oc
+          .columns(['provider_id', 'model_id'])
+          .doUpdateSet({
+            model_name: (eb) =>
+              eb.ref('excluded.model_name'),
+            model_description: (eb) =>
+              eb.ref('excluded.model_description'),
+          }),
+      )
+      .execute();
+
+    // Delete obsolete models
+    await trx
+      .deleteFrom('models')
+      .where('provider_id', '=', openRouterProvider.id)
+      .where('model_id', 'not in', modelIds)
+      .execute();
+  });
 }
