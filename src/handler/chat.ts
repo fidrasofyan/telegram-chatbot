@@ -226,7 +226,7 @@ async function processChat(req: {
   // Get asset
   let asset: Asset | undefined;
   if (req.photo.length > 0) {
-    const targetWidth = 600;
+    const targetWidth = 1024;
     const photo = req.photo.reduce((prev, current) => {
       const prevDiff = Math.abs(prev.width - targetWidth);
       const currDiff = Math.abs(
