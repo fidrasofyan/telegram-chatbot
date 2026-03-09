@@ -60,13 +60,13 @@ export interface Threads {
   chat_id: Int8;
   created_at: Timestamp;
   data: Json | null;
-  id: Generated<Int8>;
   last_command: string | null;
   max_messages_in_context: number;
   model_id: Int8 | null;
   next_step: number | null;
   output_format: OutputFormat;
   system_prompt: string;
+  thread_id: Int8;
   title: string | null;
   updated_at: Timestamp | null;
 }

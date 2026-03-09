@@ -80,8 +80,8 @@ export const chooseModelHandler = factory.createHandlers(
             .whereRef('models.id', '=', 'threads.model_id'),
         ).as('model'),
       ])
-      .where('threads.id', '=', `${req.threadID}`)
       .where('threads.chat_id', '=', `${req.chatID}`)
+      .where('threads.thread_id', '=', `${req.threadID}`)
       .executeTakeFirstOrThrow();
 
     // Set command
@@ -203,8 +203,8 @@ export const chooseModelHandler = factory.createHandlers(
             model_id: req.callbackQueryData,
             updated_at: new Date(),
           })
-          .where('id', '=', `${req.threadID}`)
           .where('chat_id', '=', `${req.chatID}`)
+          .where('thread_id', '=', `${req.threadID}`)
           .returning(['model_id'])
           .executeTakeFirstOrThrow();
 

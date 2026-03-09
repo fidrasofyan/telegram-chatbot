@@ -21,10 +21,13 @@ export async function setSession(data: {
       data: data.data,
       updated_at: new Date(),
     })
-    .where('threads.id', '=', data.threadID.toString())
     .where('threads.chat_id', '=', data.chatID.toString())
+    .where(
+      'threads.thread_id',
+      '=',
+      data.threadID.toString(),
+    )
     .returning([
-      'threads.id',
       'threads.last_command',
       'threads.next_step',
       'threads.data',
@@ -39,13 +42,16 @@ export async function getSession(data: {
   return await db
     .selectFrom('threads')
     .select([
-      'threads.id',
       'threads.last_command',
       'threads.next_step',
       'threads.data',
     ])
-    .where('threads.id', '=', data.threadID.toString())
     .where('threads.chat_id', '=', data.chatID.toString())
+    .where(
+      'threads.thread_id',
+      '=',
+      data.threadID.toString(),
+    )
     .executeTakeFirstOrThrow();
 }
 
@@ -61,10 +67,13 @@ export async function resetSession(data: {
       data: null,
       updated_at: new Date(),
     })
-    .where('threads.id', '=', data.threadID.toString())
     .where('threads.chat_id', '=', data.chatID.toString())
+    .where(
+      'threads.thread_id',
+      '=',
+      data.threadID.toString(),
+    )
     .returning([
-      'threads.id',
       'threads.last_command',
       'threads.next_step',
       'threads.data',
@@ -90,8 +99,8 @@ export async function updateThread(data: {
       system_prompt: data.systemPrompt,
       updated_at: new Date(),
     })
-    .where('id', '=', `${data.threadID}`)
     .where('chat_id', '=', `${data.chatID}`)
+    .where('thread_id', '=', `${data.threadID}`)
     .executeTakeFirstOrThrow();
 
   // Delete assets
@@ -112,8 +121,8 @@ export async function updateThread(data: {
     .selectFrom('threads')
     .innerJoin('models', 'threads.model_id', 'models.id')
     .select('models.model_name as name')
-    .where('threads.id', '=', `${data.threadID}`)
     .where('threads.chat_id', '=', `${data.chatID}`)
+    .where('threads.thread_id', '=', `${data.threadID}`)
     .executeTakeFirst();
 
   // Edit forum topic

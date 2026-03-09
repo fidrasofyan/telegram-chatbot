@@ -132,9 +132,9 @@ export const authMiddleware = createMiddleware(
     // Check if thread exists
     const thread = await db
       .selectFrom('threads')
-      .select(['threads.id'])
-      .where('threads.id', '=', `${req.threadID}`)
+      .select(['threads.chat_id', 'threads.thread_id'])
       .where('threads.chat_id', '=', `${req.chatID}`)
+      .where('threads.thread_id', '=', `${req.threadID}`)
       .executeTakeFirst();
 
     if (!thread) {
@@ -144,8 +144,8 @@ export const authMiddleware = createMiddleware(
       await db
         .insertInto('threads')
         .values({
-          id: req.threadID,
           chat_id: req.chatID,
+          thread_id: req.threadID,
           title,
           output_format: 'text',
           max_messages_in_context:

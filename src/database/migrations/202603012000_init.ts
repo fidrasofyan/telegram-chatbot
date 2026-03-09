@@ -41,8 +41,8 @@ export async function up(db: Kysely<any>): Promise<void> {
     -- threads
     CREATE TYPE output_format AS ENUM ('text', 'image', 'audio', 'video', 'embedding');
     CREATE TABLE IF NOT EXISTS threads (
-      "id" BIGSERIAL PRIMARY KEY,
       "chat_id" BIGINT NOT NULL,
+      "thread_id" BIGINT NOT NULL,
       "title" VARCHAR(200),
       "model_id" BIGINT,
       "output_format" output_format NOT NULL,
@@ -53,10 +53,10 @@ export async function up(db: Kysely<any>): Promise<void> {
       "data" JSONB,
       "created_at" TIMESTAMPTZ NOT NULL,
       "updated_at" TIMESTAMPTZ,
+      PRIMARY KEY ("chat_id", "thread_id"),
       CONSTRAINT "threads_chat_id_fk" FOREIGN KEY ("chat_id") REFERENCES "users" ("id") ON UPDATE CASCADE ON DELETE CASCADE,
       CONSTRAINT "threads_model_id_fk" FOREIGN KEY ("model_id") REFERENCES "models" ("id") ON UPDATE CASCADE ON DELETE SET NULL
     );
-    CREATE INDEX IF NOT EXISTS "threads_chat_id_idx" ON "threads" ("chat_id", "id");
     CREATE INDEX IF NOT EXISTS "threads_created_at_idx" ON "threads" ("created_at" DESC);
 
     -- messages
@@ -71,11 +71,9 @@ export async function up(db: Kysely<any>): Promise<void> {
       "asset" JSONB,
       "created_at" TIMESTAMPTZ NOT NULL,
       "updated_at" TIMESTAMPTZ,
-      CONSTRAINT "messages_chat_id_fk" FOREIGN KEY ("chat_id") REFERENCES "users" ("id") ON UPDATE CASCADE ON DELETE CASCADE,
-      CONSTRAINT "messages_thread_id_fk" FOREIGN KEY ("thread_id") REFERENCES "threads" ("id") ON UPDATE CASCADE ON DELETE CASCADE
+      CONSTRAINT "messages_chat_id_fk" FOREIGN KEY ("chat_id") REFERENCES "users" ("id") ON UPDATE CASCADE ON DELETE CASCADE
     );
     CREATE INDEX IF NOT EXISTS "messages_chat_id_thread_id_idx" ON "messages" ("chat_id", "thread_id");
-    CREATE INDEX IF NOT EXISTS "messages_chat_id_thread_id_role_idx" ON "messages" ("chat_id", "thread_id", "role");
     CREATE INDEX IF NOT EXISTS "messages_created_at_idx" ON "messages" ("created_at" DESC);
   `.execute(db);
 }

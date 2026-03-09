@@ -28,10 +28,10 @@ export const dbCleanupCron = new Cron(
     );
 
     await db.transaction().execute(async (trx) => {
-      // Delete threads that have no activity for THREAD_INACTIVITY_DAYS
+      // Get threads that have no activity for THREAD_INACTIVITY_DAYS
       const threads = await trx
         .selectFrom('threads')
-        .select(['id', 'chat_id'])
+        .select(['chat_id', 'thread_id'])
         .where(
           'updated_at',
           '<',
@@ -43,7 +43,7 @@ export const dbCleanupCron = new Cron(
       // Delete assets
       for (const thread of threads) {
         await rm(
-          `./storage/${thread.chat_id}-${thread.id}`,
+          `./storage/${thread.chat_id}-${thread.thread_id}`,
           {
             recursive: true,
             force: true,
@@ -55,9 +55,29 @@ export const dbCleanupCron = new Cron(
       await trx
         .deleteFrom('threads')
         .where(
-          'id',
+          'chat_id',
           'in',
-          threads.map((thread) => thread.id),
+          threads.map((thread) => thread.chat_id),
+        )
+        .where(
+          'thread_id',
+          'in',
+          threads.map((thread) => thread.thread_id),
+        )
+        .execute();
+
+      // Delete messages
+      await trx
+        .deleteFrom('messages')
+        .where(
+          'chat_id',
+          'in',
+          threads.map((thread) => thread.chat_id),
+        )
+        .where(
+          'thread_id',
+          'in',
+          threads.map((thread) => thread.thread_id),
         )
         .execute();
     });

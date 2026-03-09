@@ -134,8 +134,8 @@ async function processChat(req: {
           .whereRef('models.id', '=', 'threads.model_id'),
       ).as('model'),
     ])
-    .where('threads.id', '=', `${req.threadID}`)
     .where('threads.chat_id', '=', `${req.chatID}`)
+    .where('threads.thread_id', '=', `${req.threadID}`)
     .executeTakeFirstOrThrow();
 
   // If thread model is not set, use default model (if enabled)
@@ -165,8 +165,8 @@ async function processChat(req: {
           model_id: defaultModel.id,
           updated_at: new Date(),
         })
-        .where('id', '=', `${req.threadID}`)
         .where('chat_id', '=', `${req.chatID}`)
+        .where('thread_id', '=', `${req.threadID}`)
         .executeTakeFirstOrThrow();
 
       // Edit forum topic
@@ -407,15 +407,27 @@ async function processChat(req: {
   }
 
   // Save assistant message
-  await db
-    .insertInto('messages')
-    .values({
-      chat_id: req.chatID,
-      thread_id: req.threadID,
-      model: thread.model.model_id,
-      role: 'assistant',
-      content: fullResponse,
-      created_at: new Date(),
-    })
-    .execute();
+  const dateNow = new Date();
+  await db.transaction().execute(async (trx) => {
+    await trx
+      .updateTable('threads')
+      .set({
+        updated_at: dateNow,
+      })
+      .where('chat_id', '=', `${req.chatID}`)
+      .where('thread_id', '=', `${req.threadID}`)
+      .execute();
+
+    await trx
+      .insertInto('messages')
+      .values({
+        chat_id: req.chatID,
+        thread_id: req.threadID,
+        model: thread.model!.model_id,
+        role: 'assistant',
+        content: fullResponse,
+        created_at: dateNow,
+      })
+      .execute();
+  });
 }

@@ -86,19 +86,6 @@ export async function editForumTopic(params: {
   });
 }
 
-export async function deleteForumTopic(data: {
-  chat_id: number;
-  message_thread_id: number;
-}) {
-  await fetch(`${TELEGRAM_API_URL}/deleteForumTopic`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-}
-
 export async function getFile(file_id: string) {
   const response = await fetch(
     `${TELEGRAM_API_URL}/getFile`,
