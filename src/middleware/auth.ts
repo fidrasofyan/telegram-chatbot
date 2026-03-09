@@ -148,9 +148,11 @@ export const authMiddleware = createMiddleware(
           thread_id: req.threadID,
           title,
           output_format: 'text',
+          system_prompt: DEFAULT_SYSTEM_PROMPT,
+          context_messages: 0,
           max_messages_in_context:
             DEFAULT_MAX_MESSAGE_IN_CONTEXT,
-          system_prompt: DEFAULT_SYSTEM_PROMPT,
+          token_usage: 0,
           created_at: new Date(),
         })
         .executeTakeFirstOrThrow();

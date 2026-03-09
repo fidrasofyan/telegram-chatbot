@@ -89,32 +89,36 @@ export async function updateThread(data: {
   maxMessagesInContext: number;
   systemPrompt: string;
 }) {
-  // Update thread
-  await db
-    .updateTable('threads')
-    .set({
-      title: data.title,
-      output_format: data.outputFormat,
-      max_messages_in_context: data.maxMessagesInContext,
-      system_prompt: data.systemPrompt,
-      updated_at: new Date(),
-    })
-    .where('chat_id', '=', `${data.chatID}`)
-    .where('thread_id', '=', `${data.threadID}`)
-    .executeTakeFirstOrThrow();
+  await db.transaction().execute(async (trx) => {
+    // Update thread
+    await trx
+      .updateTable('threads')
+      .set({
+        title: data.title,
+        output_format: data.outputFormat,
+        system_prompt: data.systemPrompt,
+        context_messages: 0,
+        max_messages_in_context: data.maxMessagesInContext,
+        token_usage: 0,
+        updated_at: new Date(),
+      })
+      .where('chat_id', '=', `${data.chatID}`)
+      .where('thread_id', '=', `${data.threadID}`)
+      .executeTakeFirstOrThrow();
+
+    // Delete messages
+    await trx
+      .deleteFrom('messages')
+      .where('chat_id', '=', `${data.chatID}`)
+      .where('thread_id', '=', `${data.threadID}`)
+      .executeTakeFirstOrThrow();
+  });
 
   // Delete assets
   await rm(`./storage/${data.chatID}-${data.threadID}`, {
     recursive: true,
     force: true,
   });
-
-  // Delete messages
-  await db
-    .deleteFrom('messages')
-    .where('chat_id', '=', `${data.chatID}`)
-    .where('thread_id', '=', `${data.threadID}`)
-    .executeTakeFirstOrThrow();
 
   // Get model name
   const model = await db

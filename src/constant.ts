@@ -42,6 +42,10 @@ export const BOT_COMMANDS: BotCommand[] = [
     description: 'Set custom system prompt',
   },
   {
+    command: 'get_usage',
+    description: 'Get current token usage',
+  },
+  {
     command: 'translator',
     description: 'Translator',
   },

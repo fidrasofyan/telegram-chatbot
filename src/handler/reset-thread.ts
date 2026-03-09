@@ -34,12 +34,26 @@ export const resetThreadHandler = factory.createHandlers(
       force: true,
     });
 
-    // Delete messages
-    await db
-      .deleteFrom('messages')
-      .where('chat_id', '=', `${req.chatID}`)
-      .where('thread_id', '=', `${req.threadID}`)
-      .executeTakeFirstOrThrow();
+    await db.transaction().execute(async (trx) => {
+      // Update thread
+      await trx
+        .updateTable('threads')
+        .set({
+          context_messages: 0,
+          token_usage: 0,
+          updated_at: new Date(),
+        })
+        .where('chat_id', '=', `${req.chatID}`)
+        .where('thread_id', '=', `${req.threadID}`)
+        .executeTakeFirst();
+
+      // Delete messages
+      await trx
+        .deleteFrom('messages')
+        .where('chat_id', '=', `${req.chatID}`)
+        .where('thread_id', '=', `${req.threadID}`)
+        .executeTakeFirst();
+    });
 
     return c.json({
       method: 'sendMessage',

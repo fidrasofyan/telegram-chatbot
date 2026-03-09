@@ -329,6 +329,7 @@ async function processChat(req: {
 
   let fullResponse = '';
   let lastSentCharCount = 0;
+  let totalTokenUsage = 0;
 
   try {
     // Stream response
@@ -384,6 +385,10 @@ async function processChat(req: {
         }
       }
     }
+
+    // Token usage
+    const totalUsage = await result.totalUsage;
+    totalTokenUsage = totalUsage.totalTokens ?? 0;
   } catch (error) {
     console.error(error);
     fullResponse = `Error: ${error}`;
@@ -406,18 +411,21 @@ async function processChat(req: {
     });
   }
 
-  // Save assistant message
   const dateNow = new Date();
   await db.transaction().execute(async (trx) => {
+    // Update thread
     await trx
       .updateTable('threads')
       .set({
+        context_messages: messages.length + 1,
+        token_usage: totalTokenUsage,
         updated_at: dateNow,
       })
       .where('chat_id', '=', `${req.chatID}`)
       .where('thread_id', '=', `${req.threadID}`)
       .execute();
 
+    // Save assistant message
     await trx
       .insertInto('messages')
       .values({

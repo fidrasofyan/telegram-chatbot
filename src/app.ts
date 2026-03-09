@@ -9,6 +9,7 @@ import { disableModelHandler } from './handler/disable-model';
 import { enableModelHandler } from './handler/enable-model';
 import { fetchModelsHandler } from './handler/fetch-models';
 import { getSystemPromptHandler } from './handler/get-system-prompt';
+import { getUsageHandler } from './handler/get-usage';
 import { notFoundHandler } from './handler/not-found';
 import { promptGeneratorHandler } from './handler/prompt-generator';
 import { resetThreadHandler } from './handler/reset-thread';
@@ -42,6 +43,7 @@ app.post(
   ...promptGeneratorHandler,
   ...getSystemPromptHandler,
   ...setSystemPromptHandler,
+  ...getUsageHandler,
   // The order after this matters
   ...chatHandler,
   ...notFoundHandler,

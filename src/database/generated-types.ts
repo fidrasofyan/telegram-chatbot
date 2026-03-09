@@ -58,6 +58,7 @@ export interface Providers {
 
 export interface Threads {
   chat_id: Int8;
+  context_messages: number;
   created_at: Timestamp;
   data: Json | null;
   last_command: string | null;
@@ -68,6 +69,7 @@ export interface Threads {
   system_prompt: string;
   thread_id: Int8;
   title: string | null;
+  token_usage: number;
   updated_at: Timestamp | null;
 }
 
