@@ -12,7 +12,7 @@ const errorHandler = (e: unknown) => {
 // At 3 AM every day
 export const dbCleanupCron = new Cron(
   '0 3 * * *',
-  { catch: errorHandler },
+  { timezone: config.APP_TIMEZONE, catch: errorHandler },
   async () => {
     if (config.THREAD_INACTIVITY_DAYS === 0) {
       return;
