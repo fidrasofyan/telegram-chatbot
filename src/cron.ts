@@ -3,6 +3,7 @@ import { Cron } from 'croner';
 import { DateTime } from 'luxon';
 import { config } from './config';
 import { db } from './database';
+import { safePath } from './util';
 
 const errorHandler = (e: unknown) => {
   console.error('Cron job failed:', e);
@@ -42,13 +43,14 @@ export const dbCleanupCron = new Cron(
 
       // Delete assets
       for (const thread of threads) {
-        await rm(
-          `./storage/${thread.chat_id}-${thread.thread_id}`,
-          {
-            recursive: true,
-            force: true,
-          },
+        const dirPath = safePath(
+          `${thread.chat_id}-${thread.thread_id}`,
         );
+
+        await rm(dirPath, {
+          recursive: true,
+          force: true,
+        });
       }
 
       // Delete threads

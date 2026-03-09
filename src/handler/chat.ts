@@ -30,6 +30,7 @@ import {
   downloadFile,
   editForumTopic,
   normalizeModelName,
+  safePath,
   sendMessage,
   sendMessageDraft,
   splitMarkdown,
@@ -299,7 +300,9 @@ async function processChat(req: {
 
         if (m.asset) {
           const asset = m.asset as Asset;
-          const filePath = `./storage/${req.chatID}-${req.threadID}/${asset.file_id}`;
+          const filePath = safePath(
+            `${req.chatID}-${req.threadID}/${asset.file_id}`,
+          );
 
           switch (asset.file_type) {
             case 'image': {
@@ -307,6 +310,9 @@ async function processChat(req: {
                 await Bun.file(filePath).exists();
 
               if (!exists) {
+                console.warn(
+                  `Asset file not found: ${filePath}`,
+                );
                 break;
               }
 
@@ -319,6 +325,12 @@ async function processChat(req: {
               });
               break;
             }
+
+            default:
+              console.warn(
+                `Unhandled asset type: ${asset.file_type}`,
+              );
+              break;
           }
         }
 
@@ -412,12 +424,18 @@ async function processChat(req: {
   }
 
   const dateNow = new Date();
+  let contextMessage = messages.length;
+
+  if (contextMessage < thread.max_messages_in_context) {
+    contextMessage++;
+  }
+
   await db.transaction().execute(async (trx) => {
     // Update thread
     await trx
       .updateTable('threads')
       .set({
-        context_messages: messages.length + 1,
+        context_messages: contextMessage,
         token_usage: totalTokenUsage,
         updated_at: dateNow,
       })

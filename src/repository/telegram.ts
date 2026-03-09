@@ -4,7 +4,11 @@ import type {
   JsonValue,
   OutputFormat,
 } from '@/database/generated-types';
-import { editForumTopic, normalizeModelName } from '@/util';
+import {
+  editForumTopic,
+  normalizeModelName,
+  safePath,
+} from '@/util';
 
 export async function setSession(data: {
   chatID: number;
@@ -115,7 +119,10 @@ export async function updateThread(data: {
   });
 
   // Delete assets
-  await rm(`./storage/${data.chatID}-${data.threadID}`, {
+  const dirPath = safePath(
+    `${data.chatID}-${data.threadID}`,
+  );
+  await rm(dirPath, {
     recursive: true,
     force: true,
   });

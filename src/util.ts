@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { config } from '@/config';
 import { BOT_COMMANDS } from './constant';
 import type {
@@ -12,6 +13,18 @@ const TELEGRAM_API_URL =
 const TELEGRAM_FILE_URL =
   'https://api.telegram.org/file/bot' +
   config.TELEGRAM_BOT_TOKEN;
+
+const base = path.resolve('./storage'); // resolve base once, absolutely
+
+export function safePath(filePath: string): string {
+  const resolved = path.resolve(base, filePath);
+
+  if (!resolved.startsWith(base + path.sep)) {
+    throw new Error('Invalid path');
+  }
+
+  return resolved;
+}
 
 export async function sendChatAction(data: {
   chat_id: number;
@@ -131,8 +144,10 @@ export async function downloadFile(
 
   const fileFormat = file.result.file_path.split('.').pop();
 
+  const safeStoragePath = safePath(storagePath);
+
   await Bun.write(
-    `./storage/${storagePath}/${file.result.file_unique_id}${fileFormat ? `.${fileFormat}` : ''}`,
+    `${safeStoragePath}/${file.result.file_unique_id}${fileFormat ? `.${fileFormat}` : ''}`,
     response,
     {
       createPath: true,

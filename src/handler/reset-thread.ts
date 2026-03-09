@@ -6,6 +6,7 @@ import type {
   TelegramRequest,
   TelegramResponse,
 } from '@/types';
+import { safePath } from '@/util';
 
 const factory = createFactory();
 
@@ -29,7 +30,10 @@ export const resetThreadHandler = factory.createHandlers(
     }
 
     // Delete assets
-    await rm(`./storage/${req.chatID}-${req.threadID}`, {
+    const dirPath = safePath(
+      `${req.chatID}-${req.threadID}`,
+    );
+    await rm(dirPath, {
       recursive: true,
       force: true,
     });
