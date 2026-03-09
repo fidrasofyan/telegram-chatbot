@@ -42,8 +42,7 @@ export const fetchModelsHandler = factory.createHandlers(
         method: 'sendMessage',
         message_thread_id: req.threadID,
         chat_id: req.chatID,
-        parse_mode: 'HTML',
-        text: '<i>Models have been successfully updated</i>',
+        text: 'Models have been successfully updated',
       } satisfies TelegramResponse);
     } catch (error) {
       console.error(error);

@@ -114,6 +114,7 @@ export const setSystemPromptHandler =
           chat_id: req.chatID,
           message_thread_id: req.threadID,
           text: 'System prompt has been successfully changed',
+          reply_markup: DEFAULT_REPLY_MARKUP,
         } satisfies TelegramResponse);
       }
 
