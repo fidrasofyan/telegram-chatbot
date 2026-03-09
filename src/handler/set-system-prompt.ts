@@ -1,4 +1,5 @@
 import { createFactory } from 'hono/factory';
+import { DEFAULT_REPLY_MARKUP } from '@/constant';
 import { db } from '@/database';
 import {
   getSession,
@@ -73,6 +74,10 @@ export const setSystemPromptHandler =
           message_thread_id: req.threadID,
           parse_mode: 'HTML',
           text: '<i>Type custom system prompt...</i>',
+          reply_markup: {
+            keyboard: [['Cancel']],
+            resize_keyboard: true,
+          },
         } satisfies TelegramResponse);
       }
 
@@ -82,6 +87,17 @@ export const setSystemPromptHandler =
           chatID: req.chatID,
           threadID: req.threadID,
         });
+
+        if (req.text.toLowerCase() === 'cancel') {
+          return c.json({
+            method: 'sendMessage',
+            chat_id: req.chatID,
+            message_thread_id: req.threadID,
+            parse_mode: 'HTML',
+            text: '<i>Cancelled</i>',
+            reply_markup: DEFAULT_REPLY_MARKUP,
+          } satisfies TelegramResponse);
+        }
 
         await db
           .updateTable('threads')
