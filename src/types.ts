@@ -15,7 +15,7 @@ export type TelegramResponse = {
   method: 'sendMessage' | 'editMessageText';
   message_id?: number;
   chat_id: number;
-  message_thread_id?: number;
+  message_thread_id: number;
   parse_mode?: 'HTML' | 'MarkdownV2';
   text: string;
   reply_markup?:

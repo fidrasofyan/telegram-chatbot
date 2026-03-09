@@ -34,6 +34,14 @@ export const BOT_COMMANDS: BotCommand[] = [
     description: 'Set default model for new thread',
   },
   {
+    command: 'get_system_prompt',
+    description: 'Get current system prompt',
+  },
+  {
+    command: 'set_system_prompt',
+    description: 'Set custom system prompt',
+  },
+  {
     command: 'translator',
     description: 'Translator',
   },

@@ -45,8 +45,7 @@ export const resetThreadHandler = factory.createHandlers(
       method: 'sendMessage',
       chat_id: req.chatID,
       message_thread_id: req.threadID,
-      parse_mode: 'HTML',
-      text: '<i>Thread reset</i>',
+      text: 'Thread reset',
       reply_markup: DEFAULT_REPLY_MARKUP,
     } satisfies TelegramResponse);
   },

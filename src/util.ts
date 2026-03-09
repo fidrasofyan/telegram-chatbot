@@ -15,7 +15,7 @@ const TELEGRAM_FILE_URL =
 
 export async function sendChatAction(data: {
   chat_id: number;
-  message_thread_id?: number;
+  message_thread_id: number;
   action:
     | 'typing'
     | 'upload_photo'
@@ -40,7 +40,7 @@ export async function sendChatAction(data: {
 
 export async function sendMessage(data: {
   chat_id: number;
-  message_thread_id?: number;
+  message_thread_id: number;
   parse_mode?: 'HTML' | 'MarkdownV2';
   text: string;
   reply_markup?:
@@ -58,7 +58,7 @@ export async function sendMessage(data: {
 
 export async function sendMessageDraft(data: {
   chat_id: number;
-  message_thread_id?: number;
+  message_thread_id: number;
   draft_id: number;
   parse_mode?: 'HTML' | 'MarkdownV2';
   text: string;

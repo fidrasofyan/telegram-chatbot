@@ -8,9 +8,11 @@ import { chooseDefaultModelHandler } from './handler/default-model';
 import { disableModelHandler } from './handler/disable-model';
 import { enableModelHandler } from './handler/enable-model';
 import { fetchModelsHandler } from './handler/fetch-models';
+import { getSystemPromptHandler } from './handler/get-system-prompt';
 import { notFoundHandler } from './handler/not-found';
 import { promptGeneratorHandler } from './handler/prompt-generator';
 import { resetThreadHandler } from './handler/reset-thread';
+import { setSystemPromptHandler } from './handler/set-system-prompt';
 import { translatorHandler } from './handler/translator';
 import { authMiddleware } from './middleware/auth';
 import { loggerMiddleware } from './middleware/logger';
@@ -38,6 +40,8 @@ app.post(
   ...resetThreadHandler,
   ...translatorHandler,
   ...promptGeneratorHandler,
+  ...getSystemPromptHandler,
+  ...setSystemPromptHandler,
   // The order after this matters
   ...chatHandler,
   ...notFoundHandler,
