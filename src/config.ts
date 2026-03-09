@@ -31,6 +31,10 @@ export const config = {
   APP_HOST: readEnvSync('APP_HOST'),
   APP_PORT: Number.parseInt(readEnvSync('APP_PORT'), 10),
   APP_TIMEZONE: readEnvSync('APP_TIMEZONE'),
+  THREAD_INACTIVITY_DAYS: Number.parseInt(
+    readEnvSync('THREAD_INACTIVITY_DAYS'),
+    10,
+  ),
 
   // AI
   VERCEL_AI_API_KEY: readEnvSync('VERCEL_AI_API_KEY'),
@@ -65,6 +69,14 @@ const validNodeEnvs = ['production', 'development'];
 
 if (!validNodeEnvs.includes(config.NODE_ENV)) {
   console.error(`Invalid NODE_ENV: ${config.NODE_ENV}`);
+  process.exit(1);
+}
+
+if (
+  Number.isNaN(config.THREAD_INACTIVITY_DAYS) ||
+  config.THREAD_INACTIVITY_DAYS < 0
+) {
+  console.error('Invalid THREAD_INACTIVITY_DAYS');
   process.exit(1);
 }
 

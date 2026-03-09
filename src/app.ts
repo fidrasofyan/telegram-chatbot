@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { config } from './config';
+import { dbCleanupCron } from './cron';
 import { migrate } from './database';
 import { chatHandler } from './handler/chat';
 import { chooseModelHandler } from './handler/choose-model';
@@ -42,21 +43,25 @@ app.post(
   ...notFoundHandler,
 );
 
-const server = Bun.serve({
+// HTTP Server
+const httpServer = Bun.serve({
   development: config.NODE_ENV === 'development',
   hostname: config.APP_HOST,
   port: config.APP_PORT,
   fetch: app.fetch,
 });
 
-console.log(`Server running at ${server.url}`);
+console.log(`Server running at ${httpServer.url}`);
 
 // Graceful shutdown
 async function gracefulShutdown() {
   console.log(
-    'SIGINT received, shutting down gracefully...',
+    'Received signal, shutting down gracefully...',
   );
-  await server.stop();
+
+  await httpServer.stop();
+  dbCleanupCron.stop();
+
   console.log('Server stopped');
   process.exit(0);
 }
