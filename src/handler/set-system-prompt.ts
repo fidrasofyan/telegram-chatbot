@@ -73,7 +73,7 @@ export const setSystemPromptHandler =
           chat_id: req.chatID,
           message_thread_id: req.threadID,
           parse_mode: 'HTML',
-          text: '<i>Type custom system prompt...</i>',
+          text: '<i>Type your custom system prompt...</i>',
           reply_markup: {
             keyboard: [['Cancel']],
             resize_keyboard: true,
