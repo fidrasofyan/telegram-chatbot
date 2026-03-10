@@ -58,10 +58,10 @@ export interface Providers {
 
 export interface Threads {
   chat_id: Int8;
+  command: string | null;
   context_messages: number;
   created_at: Timestamp;
   data: Json | null;
-  last_command: string | null;
   max_messages_in_context: number;
   model_id: Int8 | null;
   next_step: number | null;

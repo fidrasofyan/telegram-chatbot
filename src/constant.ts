@@ -46,6 +46,10 @@ export const BOT_COMMANDS: BotCommand[] = [
     description: 'Get current token usage',
   },
   {
+    command: 'prompt_generator',
+    description: 'Prompt generator',
+  },
+  {
     command: 'translator',
     description: 'Translator',
   },
@@ -54,15 +58,7 @@ export const BOT_COMMANDS: BotCommand[] = [
     description: 'Casual translator',
   },
   {
-    command: 'prompt_generator',
-    description: 'Prompt generator',
-  },
-  {
     command: 'chat',
     description: 'Chat',
   },
-  // {
-  //   command: 'delete_topic',
-  //   description: 'Delete current topic',
-  // },
 ];

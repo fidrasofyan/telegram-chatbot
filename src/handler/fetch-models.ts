@@ -1,61 +1,37 @@
 import { createGateway } from 'ai';
-import { createFactory } from 'hono/factory';
 import { config } from '@/config';
 import { db } from '@/database';
 import type {
-  TelegramRequest,
   TelegramResponse,
+  TelegramUpdate,
 } from '@/types';
 
-const factory = createFactory();
+export async function fetchModelsHandler(
+  update: TelegramUpdate,
+): Promise<TelegramResponse> {
+  try {
+    await Promise.all([
+      fetchVercelAIModels(),
+      fetchOpenRouterModels(),
+    ]);
 
-export const fetchModelsHandler = factory.createHandlers(
-  async (c, next) => {
-    const body = (await c.req.json()) as TelegramRequest;
-
-    if (!body.message) {
-      return next();
-    }
-
-    const req = {
-      messageID: body.message.message_id,
-      chatID: body.message.chat.id,
-      threadID: body.message.message_thread_id,
-      text: body.message.text,
+    return {
+      method: 'sendMessage',
+      message_thread_id: update.threadID,
+      chat_id: update.chatID,
+      text: 'Models have been successfully updated',
     };
-
-    if (!req.chatID || !req.threadID || !req.text) {
-      return next();
-    }
-
-    if (req.text.toLowerCase() !== '/fetch_models') {
-      return next();
-    }
-
-    try {
-      await Promise.all([
-        fetchVercelAIModels(),
-        fetchOpenRouterModels(),
-      ]);
-
-      return c.json({
-        method: 'sendMessage',
-        message_thread_id: req.threadID,
-        chat_id: req.chatID,
-        text: 'Models have been successfully updated',
-      } satisfies TelegramResponse);
-    } catch (error) {
-      console.error(error);
-      return c.json({
-        method: 'sendMessage',
-        message_thread_id: req.threadID,
-        chat_id: req.chatID,
-        parse_mode: 'HTML',
-        text: '<i>Failed to fetch models</i>',
-      } satisfies TelegramResponse);
-    }
-  },
-);
+  } catch (error) {
+    console.error(error);
+    return {
+      method: 'sendMessage',
+      message_thread_id: update.threadID,
+      chat_id: update.chatID,
+      parse_mode: 'HTML',
+      text: '<i>Failed to fetch models</i>',
+    };
+  }
+}
 
 // Vercel AI
 const vercelAI = createGateway({

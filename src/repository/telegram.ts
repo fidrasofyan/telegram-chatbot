@@ -20,7 +20,7 @@ export async function setSession(data: {
   return await db
     .updateTable('threads')
     .set({
-      last_command: data.command,
+      command: data.command,
       next_step: data.nextStep,
       data: data.data,
       updated_at: new Date(),
@@ -32,7 +32,7 @@ export async function setSession(data: {
       data.threadID.toString(),
     )
     .returning([
-      'threads.last_command',
+      'threads.command',
       'threads.next_step',
       'threads.data',
     ])
@@ -46,7 +46,7 @@ export async function getSession(data: {
   return await db
     .selectFrom('threads')
     .select([
-      'threads.last_command',
+      'threads.command',
       'threads.next_step',
       'threads.data',
     ])
@@ -66,7 +66,7 @@ export async function resetSession(data: {
   return await db
     .updateTable('threads')
     .set({
-      last_command: null,
+      command: null,
       next_step: null,
       data: null,
       updated_at: new Date(),
@@ -78,7 +78,7 @@ export async function resetSession(data: {
       data.threadID.toString(),
     )
     .returning([
-      'threads.last_command',
+      'threads.command',
       'threads.next_step',
       'threads.data',
     ])

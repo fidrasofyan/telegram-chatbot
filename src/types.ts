@@ -1,4 +1,19 @@
 // App types
+export type TelegramUpdate = {
+  isCallbackQuery: boolean;
+  messageID: number;
+  chatID: number;
+  threadID: number;
+  text: string | null;
+  callbackQueryData: string | null;
+  photo: TelegramPhoto[];
+};
+
+export type AppEnv = {
+  Variables: {
+    telegramUpdate: TelegramUpdate;
+  };
+};
 
 export type Asset = {
   file_id: string;

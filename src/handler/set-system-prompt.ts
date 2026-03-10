@@ -1,4 +1,3 @@
-import { createFactory } from 'hono/factory';
 import { DEFAULT_REPLY_MARKUP } from '@/constant';
 import { db } from '@/database';
 import {
@@ -7,128 +6,98 @@ import {
   setSession,
 } from '@/repository/telegram';
 import type {
-  TelegramRequest,
   TelegramResponse,
+  TelegramUpdate,
 } from '@/types';
 
-const factory = createFactory();
-
-export const setSystemPromptHandler =
-  factory.createHandlers(async (c, next) => {
-    const body = (await c.req.json()) as TelegramRequest;
-
-    if (!body.message) {
-      return next();
-    }
-
-    const req = {
-      messageID: body.message.message_id,
-      chatID: body.message.chat.id,
-      threadID: body.message.message_thread_id,
-      command: body.message.text,
-      text: body.message.text,
-    };
-
-    if (!req.chatID || !req.threadID || !req.text) {
-      return next();
-    }
-
-    // Set command
-    let session = await getSession({
-      chatID: req.chatID,
-      threadID: req.threadID,
-    });
-    if (session.last_command) {
-      req.command = session.last_command;
-    }
-
-    if (
-      req.command?.toLowerCase() !== '/set_system_prompt'
-    ) {
-      return next();
-    }
-
-    // Set step
-    if (!session.next_step) {
-      session = await setSession({
-        chatID: req.chatID,
-        threadID: req.threadID,
-        command: req.command,
-        nextStep: 1,
-      });
-    }
-
-    switch (session.next_step) {
-      // Type custom system prompt
-      case 1: {
-        await setSession({
-          chatID: req.chatID,
-          threadID: req.threadID,
-          command: req.command,
-          nextStep: 2,
-        });
-
-        return c.json({
-          method: 'sendMessage',
-          chat_id: req.chatID,
-          message_thread_id: req.threadID,
-          parse_mode: 'HTML',
-          text: '<i>Type your custom system prompt...</i>',
-          reply_markup: {
-            keyboard: [['Cancel']],
-            resize_keyboard: true,
-          },
-        } satisfies TelegramResponse);
-      }
-
-      // Set custom system prompt
-      case 2: {
-        await resetSession({
-          chatID: req.chatID,
-          threadID: req.threadID,
-        });
-
-        if (req.text.toLowerCase() === 'cancel') {
-          return c.json({
-            method: 'sendMessage',
-            chat_id: req.chatID,
-            message_thread_id: req.threadID,
-            parse_mode: 'HTML',
-            text: '<i>Cancelled</i>',
-            reply_markup: DEFAULT_REPLY_MARKUP,
-          } satisfies TelegramResponse);
-        }
-
-        await db
-          .updateTable('threads')
-          .set({
-            system_prompt: req.text,
-            updated_at: new Date(),
-          })
-          .where('chat_id', '=', `${req.chatID}`)
-          .where('thread_id', '=', `${req.threadID}`)
-          .executeTakeFirstOrThrow();
-
-        return c.json({
-          method: 'sendMessage',
-          chat_id: req.chatID,
-          message_thread_id: req.threadID,
-          text: 'System prompt has been successfully changed',
-          reply_markup: DEFAULT_REPLY_MARKUP,
-        } satisfies TelegramResponse);
-      }
-
-      default:
-        await resetSession({
-          chatID: req.chatID,
-          threadID: req.threadID,
-        });
-        return c.json({
-          method: 'sendMessage',
-          message_thread_id: req.threadID,
-          chat_id: req.chatID,
-          parse_mode: 'HTML',
-          text: '<i>Unhandled step</i>',
-        } satisfies TelegramResponse);
-    }
+export async function setSystemPromptHandler(
+  update: TelegramUpdate,
+): Promise<TelegramResponse> {
+  let session = await getSession({
+    chatID: update.chatID,
+    threadID: update.threadID,
   });
+
+  if (!session.next_step) {
+    session = await setSession({
+      chatID: update.chatID,
+      threadID: update.threadID,
+      command: update.text!,
+      nextStep: 1,
+    });
+  }
+
+  switch (session.next_step) {
+    // Type custom system prompt
+    case 1: {
+      await setSession({
+        chatID: update.chatID,
+        threadID: update.threadID,
+        command: session.command!,
+        nextStep: 2,
+      });
+
+      return {
+        method: 'sendMessage',
+        chat_id: update.chatID,
+        message_thread_id: update.threadID,
+        parse_mode: 'HTML',
+        text: '<i>Type your custom system prompt...</i>',
+        reply_markup: {
+          keyboard: [['Cancel']],
+          resize_keyboard: true,
+        },
+      };
+    }
+
+    // Set custom system prompt
+    case 2: {
+      await resetSession({
+        chatID: update.chatID,
+        threadID: update.threadID,
+      });
+
+      if (update.text!.toLowerCase() === 'cancel') {
+        return {
+          method: 'sendMessage',
+          chat_id: update.chatID,
+          message_thread_id: update.threadID,
+          parse_mode: 'HTML',
+          text: '<i>Cancelled</i>',
+          reply_markup: DEFAULT_REPLY_MARKUP,
+        };
+      }
+
+      await db
+        .updateTable('threads')
+        .set({
+          system_prompt: update.text!,
+          updated_at: new Date(),
+        })
+        .where('chat_id', '=', `${update.chatID}`)
+        .where('thread_id', '=', `${update.threadID}`)
+        .executeTakeFirstOrThrow();
+
+      return {
+        method: 'sendMessage',
+        chat_id: update.chatID,
+        message_thread_id: update.threadID,
+        text: 'System prompt has been successfully changed',
+        reply_markup: DEFAULT_REPLY_MARKUP,
+      };
+    }
+
+    default:
+      await resetSession({
+        chatID: update.chatID,
+        threadID: update.threadID,
+      });
+      return {
+        method: 'sendMessage',
+        message_thread_id: update.threadID,
+        chat_id: update.chatID,
+        parse_mode: 'HTML',
+        text: '<i>Unhandled step</i>',
+      };
+  }
+}

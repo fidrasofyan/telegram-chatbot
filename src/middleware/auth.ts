@@ -6,9 +6,9 @@ import {
 } from '@/constant';
 import { db } from '@/database';
 import type {
-  TelegramPhoto,
   TelegramRequest,
   TelegramResponse,
+  TelegramUpdate,
 } from '@/types';
 
 export const authMiddleware = createMiddleware(
@@ -29,79 +29,75 @@ export const authMiddleware = createMiddleware(
 
     const body = (await c.req.json()) as TelegramRequest;
 
-    const req: {
-      isCallbackQuery: boolean;
-      messageID: number;
-      threadID: number;
-      chatID: number;
-      text: string | null;
-      photo: TelegramPhoto[];
-    } = {
+    const update: TelegramUpdate = {
       isCallbackQuery: false,
       messageID: 0,
       threadID: 0,
       chatID: 0,
       text: null,
+      callbackQueryData: null,
       photo: [],
     };
 
     if (body.message) {
-      req.messageID = body.message.message_id;
-      req.threadID = body.message.message_thread_id;
-      req.chatID = body.message.chat.id;
-      req.text =
+      update.messageID = body.message.message_id;
+      update.threadID = body.message.message_thread_id;
+      update.chatID = body.message.chat.id;
+      update.text =
         body.message.text || body.message.caption || null;
-      req.photo = body.message.photo || [];
+      update.photo = body.message.photo || [];
     } else if (body.callback_query) {
-      req.isCallbackQuery = true;
-      req.messageID =
+      update.isCallbackQuery = true;
+      update.messageID =
         body.callback_query.message!.message_id;
-      req.threadID =
+      update.threadID =
         body.callback_query.message!.message_thread_id;
-      req.chatID = body.callback_query.message!.chat.id;
-      req.text = body.callback_query.message!.text || null;
-      req.photo = [];
+      update.chatID = body.callback_query.message!.chat.id;
+      update.text = 'callback_query';
+      update.callbackQueryData =
+        body.callback_query.data || null;
+      update.photo = [];
     }
 
     // Only allow messages in threads
-    if (!req.threadID) {
+    if (!update.threadID) {
       return c.json({
         method: 'sendMessage',
-        chat_id: req.chatID,
-        message_thread_id: req.threadID,
+        chat_id: update.chatID,
+        message_thread_id: update.threadID,
         parse_mode: 'HTML',
         text: '<i>This bot can only be used in thread mode</i>',
       } satisfies TelegramResponse);
     }
 
     // Chat ID
-    if (!config.ALLOWED_CHAT_IDS.includes(req.chatID)) {
+    if (!config.ALLOWED_CHAT_IDS.includes(update.chatID)) {
       return c.json({
         method: 'sendMessage',
-        chat_id: req.chatID,
-        message_thread_id: req.threadID,
+        chat_id: update.chatID,
+        message_thread_id: update.threadID,
         parse_mode: 'HTML',
-        text: `Access denied. Your chat ID is <code>${req.chatID}</code>.`,
+        text: `Access denied. Your chat ID is <code>${update.chatID}</code>.`,
       } satisfies TelegramResponse);
     }
 
     // Ignore non-text messages
-    if (!req.text) {
+    if (!update.text) {
       if (body.message?.video) {
         return c.json({
           method: 'sendMessage',
-          chat_id: req.chatID,
-          message_thread_id: req.threadID,
+          chat_id: update.chatID,
+          message_thread_id: update.threadID,
           parse_mode: 'HTML',
           text: '<i>Video is not supported</i>',
         } satisfies TelegramResponse);
       }
 
-      if (req.photo.length > 0) {
+      if (update.photo.length > 0) {
         return c.json({
           method: 'sendMessage',
-          chat_id: req.chatID,
-          message_thread_id: req.threadID,
+          chat_id: update.chatID,
+          message_thread_id: update.threadID,
           parse_mode: 'HTML',
           text: '<i>Missing prompt. Please send a photo with a prompt</i>',
         } satisfies TelegramResponse);
@@ -113,14 +109,14 @@ export const authMiddleware = createMiddleware(
     const user = await db
       .selectFrom('users')
       .select(['users.id'])
-      .where('users.id', '=', `${req.chatID}`)
+      .where('users.id', '=', `${update.chatID}`)
       .executeTakeFirst();
 
     if (!user) {
       await db
         .insertInto('users')
         .values({
-          id: req.chatID,
+          id: update.chatID,
           username: body.message?.from?.username,
           first_name: body.message?.from?.first_name,
           last_name: body.message?.from?.last_name,
@@ -133,8 +129,8 @@ export const authMiddleware = createMiddleware(
     const thread = await db
       .selectFrom('threads')
       .select(['threads.chat_id', 'threads.thread_id'])
-      .where('threads.chat_id', '=', `${req.chatID}`)
-      .where('threads.thread_id', '=', `${req.threadID}`)
+      .where('threads.chat_id', '=', `${update.chatID}`)
+      .where('threads.thread_id', '=', `${update.threadID}`)
       .executeTakeFirst();
 
     if (!thread) {
@@ -144,8 +140,8 @@ export const authMiddleware = createMiddleware(
       await db
         .insertInto('threads')
         .values({
-          chat_id: req.chatID,
-          thread_id: req.threadID,
+          chat_id: update.chatID,
+          thread_id: update.threadID,
           title,
           output_format: 'text',
           system_prompt: DEFAULT_SYSTEM_PROMPT,
@@ -157,6 +153,9 @@ export const authMiddleware = createMiddleware(
         })
         .executeTakeFirstOrThrow();
     }
+
+    // Set parsed update on context for downstream handlers
+    c.set('telegramUpdate', update);
 
     await next();
   },

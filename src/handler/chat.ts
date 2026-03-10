@@ -9,7 +9,6 @@ import {
   type UserModelMessage,
   wrapLanguageModel,
 } from 'ai';
-import { createFactory } from 'hono/factory';
 import { jsonObjectFrom } from 'kysely/helpers/postgres';
 import { convert as telegramifyMarkdown } from 'telegram-markdown-v2';
 import { config } from '@/config';
@@ -23,8 +22,8 @@ import { updateThread } from '@/repository/telegram';
 import type {
   Asset,
   TelegramPhoto,
-  TelegramRequest,
   TelegramResponse,
+  TelegramUpdate,
 } from '@/types';
 import {
   downloadFile,
@@ -36,8 +35,6 @@ import {
   splitMarkdown,
 } from '@/util';
 
-const factory = createFactory();
-
 const vercelAI = createGateway({
   apiKey: config.VERCEL_AI_API_KEY,
 });
@@ -46,70 +43,56 @@ const openRouter = createOpenRouter({
   apiKey: config.OPENROUTER_API_KEY,
 });
 
-export const chatHandler = factory.createHandlers(
-  async (c, next) => {
-    const body = (await c.req.json()) as TelegramRequest;
+export async function chatHandler(
+  update: TelegramUpdate,
+): Promise<TelegramResponse | null> {
+  // If chat command, update thread settings
+  if (update.text!.toLowerCase() === '/chat') {
+    const title = 'Chat';
 
-    const req = {
-      chatID: body.message?.chat.id,
-      threadID: body.message?.message_thread_id,
-      text: body.message?.text || body.message?.caption,
-      photo: body.message?.photo || [],
-    };
-
-    if (!req.chatID || !req.threadID || !req.text) {
-      return next();
-    }
-
-    // If chat command, update thread settings
-    if (req.text.toLowerCase() === '/chat') {
-      const title = 'Chat';
-
-      // Update thread mode
-      await updateThread({
-        chatID: req.chatID,
-        threadID: req.threadID,
-        title,
-        outputFormat: 'text',
-        maxMessagesInContext:
-          DEFAULT_MAX_MESSAGE_IN_CONTEXT,
-        systemPrompt: DEFAULT_SYSTEM_PROMPT,
-      });
-
-      return c.json({
-        method: 'sendMessage',
-        message_thread_id: req.threadID,
-        chat_id: req.chatID,
-        parse_mode: 'HTML',
-        text: '<i>This thread is now in chat mode</i>',
-        reply_markup: DEFAULT_REPLY_MARKUP,
-      } satisfies TelegramResponse);
-    }
-
-    // Process chat in the background
-    processChat({
-      chatID: req.chatID,
-      threadID: req.threadID,
-      text: req.text,
-      photo: req.photo,
-    }).catch((error) => {
-      // TODO: save error message to db
-      console.error(error);
-
-      if (req.chatID && req.threadID) {
-        sendMessage({
-          chat_id: req.chatID,
-          message_thread_id: req.threadID,
-          parse_mode: 'HTML',
-          text: '<i>Something went wrong</i>',
-        });
-      }
+    // Update thread mode
+    await updateThread({
+      chatID: update.chatID,
+      threadID: update.threadID,
+      title,
+      outputFormat: 'text',
+      maxMessagesInContext: DEFAULT_MAX_MESSAGE_IN_CONTEXT,
+      systemPrompt: DEFAULT_SYSTEM_PROMPT,
     });
 
-    // Return immediately to avoid timeout
-    return c.json({});
-  },
-);
+    return {
+      method: 'sendMessage',
+      message_thread_id: update.threadID,
+      chat_id: update.chatID,
+      parse_mode: 'HTML',
+      text: '<i>This thread is now in chat mode</i>',
+      reply_markup: DEFAULT_REPLY_MARKUP,
+    };
+  }
+
+  // Process chat in the background
+  processChat({
+    chatID: update.chatID,
+    threadID: update.threadID,
+    text: update.text!,
+    photo: update.photo,
+  }).catch((error) => {
+    // TODO: save error message to db
+    console.error(error);
+
+    if (update.chatID && update.threadID) {
+      sendMessage({
+        chat_id: update.chatID,
+        message_thread_id: update.threadID,
+        parse_mode: 'HTML',
+        text: '<i>Something went wrong</i>',
+      });
+    }
+  });
+
+  // Return immediately to avoid timeout
+  return null;
+}
 
 async function processChat(req: {
   chatID: number;

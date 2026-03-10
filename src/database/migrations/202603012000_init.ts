@@ -50,7 +50,7 @@ export async function up(db: Kysely<any>): Promise<void> {
       "context_messages" INT NOT NULL,
       "max_messages_in_context" INT NOT NULL,
       "token_usage" INT NOT NULL,
-      "last_command" VARCHAR(100),
+      "command" VARCHAR(100),
       "next_step" SMALLINT,
       "data" JSONB,
       "created_at" TIMESTAMPTZ NOT NULL,
