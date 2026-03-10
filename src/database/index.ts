@@ -19,6 +19,12 @@ const createPool = () => {
     user: config.DATABASE_USER,
     password: config.DATABASE_PASSWORD,
     max: config.DATABASE_CONNECTION_LIMIT,
+    // TODO: Use onConnect instead of pool.on('connect'). Wait for @types/pg update
+    // onConnect: async (client) => {
+    //   await client.query(
+    //     `SET TIME ZONE '${config.APP_TIMEZONE}'`,
+    //   );
+    // },
   });
 
   pool.on('connect', async (client) => {
