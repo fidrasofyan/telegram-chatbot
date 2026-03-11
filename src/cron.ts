@@ -41,6 +41,10 @@ export const dbCleanupCron = new Cron(
         .forUpdate()
         .execute();
 
+      if (threads.length === 0) {
+        return;
+      }
+
       // Delete assets
       for (const thread of threads) {
         const dirPath = safePath(
@@ -56,30 +60,28 @@ export const dbCleanupCron = new Cron(
       // Delete threads
       await trx
         .deleteFrom('threads')
-        .where(
-          'chat_id',
-          'in',
-          threads.map((thread) => thread.chat_id),
-        )
-        .where(
-          'thread_id',
-          'in',
-          threads.map((thread) => thread.thread_id),
+        .where(({ eb, refTuple, tuple }) =>
+          eb(
+            refTuple('chat_id', 'thread_id'),
+            'in',
+            threads.map((t) =>
+              tuple(t.chat_id, t.thread_id),
+            ),
+          ),
         )
         .execute();
 
       // Delete messages
       await trx
         .deleteFrom('messages')
-        .where(
-          'chat_id',
-          'in',
-          threads.map((thread) => thread.chat_id),
-        )
-        .where(
-          'thread_id',
-          'in',
-          threads.map((thread) => thread.thread_id),
+        .where(({ eb, refTuple, tuple }) =>
+          eb(
+            refTuple('chat_id', 'thread_id'),
+            'in',
+            threads.map((t) =>
+              tuple(t.chat_id, t.thread_id),
+            ),
+          ),
         )
         .execute();
     });
