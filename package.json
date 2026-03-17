@@ -7,7 +7,6 @@
   "scripts": {
     "dev": "bun run --watch src/app.ts",
     "dev-tools": "bunx --bun @ai-sdk/devtools",
-    "build": "bun build --target=bun --compile --minify --bytecode --outfile=dist/telegram-chatbot ./src/app.ts",
     "code-check-all": "biome check && biome lint && tsc --noEmit",
     "code-check": "biome check",
     "code-fix": "biome check --write",
