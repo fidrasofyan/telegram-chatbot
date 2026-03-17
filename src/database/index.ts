@@ -47,16 +47,18 @@ export const db = new Kysely<DB>({
 });
 
 // Test connection
-try {
-  await sql`SELECT 1`.execute(db);
-  console.log(
-    `Database: (${config.DATABASE_HOST}:${config.DATABASE_PORT} - ${config.DATABASE_NAME}) connected`,
-  );
-} catch (error) {
-  console.error('Failed to connect to database');
-  console.error(error);
-  process.exit(1);
-}
+(async () => {
+  try {
+    await sql`SELECT 1`.execute(db);
+    console.log(
+      `Database: (${config.DATABASE_HOST}:${config.DATABASE_PORT} - ${config.DATABASE_NAME}) connected`,
+    );
+  } catch (error) {
+    console.error('Failed to connect to database');
+    console.error(error);
+    process.exit(1);
+  }
+})();
 
 // Migration
 export async function migrate(type: 'latest' | 'down') {

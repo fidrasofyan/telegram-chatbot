@@ -1,6 +1,7 @@
 .DS_Store
 .devtools
 .vscode
+dist
 node_modules
 storage
 .dockerignore
@@ -10,6 +11,7 @@ storage
 .gitignore
 biome.json
 Dockerfile
+set-webhook.ts
 *.yaml
 *.md
 *.http
