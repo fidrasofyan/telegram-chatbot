@@ -169,7 +169,7 @@ async function processChat(req: {
   }
 
   // If thread model is not set and default model is also not set or not enabled, show error
-  if (!thread.model || !thread.model.is_enabled) {
+  if (!thread.model?.is_enabled) {
     await sendMessage({
       chat_id: req.chatID,
       message_thread_id: req.threadID,
@@ -351,7 +351,7 @@ async function processChat(req: {
             message_thread_id: req.threadID,
             draft_id: Number(userMessage.id),
             parse_mode: 'HTML',
-            text: '<i>Thinking...</i>',
+            text: '<i>Thinking </i>',
           });
           break;
         }

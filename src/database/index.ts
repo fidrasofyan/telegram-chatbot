@@ -1,12 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { Kysely, PostgresDialect, sql } from 'kysely';
 import {
   FileMigrationProvider,
-  Kysely,
   Migrator,
-  PostgresDialect,
-  sql,
-} from 'kysely';
+} from 'kysely/migration';
 import { Pool } from 'pg';
 import { config } from '@/config';
 import type { DB } from './generated-types';

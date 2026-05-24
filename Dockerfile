@@ -1,11 +1,11 @@
 # Stage 1: Builder
-FROM oven/bun:1.3.10-alpine AS builder
+FROM oven/bun:1.3.14-alpine AS builder
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 
 # Stage 2: Production
-FROM oven/bun:1.3.10-alpine AS production
+FROM oven/bun:1.3.14-alpine AS production
 WORKDIR /app
 
 COPY --from=builder /app/node_modules ./node_modules

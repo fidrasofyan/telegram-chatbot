@@ -29,6 +29,9 @@
     // Path aliases
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+
+    // Whitelist types
+    "types": ["bun"]
   }
 }

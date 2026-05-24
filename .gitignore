@@ -45,3 +45,6 @@ compose.yaml
 # Storage
 storage
 
+# antigravity
+.antigravitycli
+
