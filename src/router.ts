@@ -5,11 +5,13 @@ import { chooseDefaultModelHandler } from './handler/default-model';
 import { disableModelHandler } from './handler/disable-model';
 import { enableModelHandler } from './handler/enable-model';
 import { fetchModelsHandler } from './handler/fetch-models';
+import { getContextLimitHandler } from './handler/get-context-limit';
 import { getSystemPromptHandler } from './handler/get-system-prompt';
 import { getUsageHandler } from './handler/get-usage';
 import { notFoundHandler } from './handler/not-found';
 import { promptGeneratorHandler } from './handler/prompt-generator';
 import { resetThreadHandler } from './handler/reset-thread';
+import { setContextLimitHandler } from './handler/set-context-limit';
 import { setSystemPromptHandler } from './handler/set-system-prompt';
 import { translatorHandler } from './handler/translator';
 import { getSession } from './repository/telegram';
@@ -35,6 +37,8 @@ const commandHandlers: CommandHandler = {
   'reset thread': resetThreadHandler,
   '/get_system_prompt': getSystemPromptHandler,
   '/set_system_prompt': setSystemPromptHandler,
+  '/get_context_limit': getContextLimitHandler,
+  '/set_context_limit': setContextLimitHandler,
   '/get_usage': getUsageHandler,
   '/prompt_generator': promptGeneratorHandler,
   '/translator': translatorHandler,

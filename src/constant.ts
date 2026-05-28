@@ -42,6 +42,14 @@ export const BOT_COMMANDS: BotCommand[] = [
     description: 'Set custom system prompt',
   },
   {
+    command: 'get_context_limit',
+    description: 'Get current context message limit',
+  },
+  {
+    command: 'set_context_limit',
+    description: 'Set custom context message limit',
+  },
+  {
     command: 'get_usage',
     description: 'Get current token usage',
   },
